@@ -78,7 +78,7 @@ def _register_font() -> str:
 @functools.lru_cache(maxsize=1)
 def _find_logo() -> str | None:
     candidates = [
-        os.path.join(_BASE_DIR, "static", "images", "sadara_logo.jpg"),
+        os.path.join(_BASE_DIR, "static", "images", "sadara_logo.jpeg"),
         os.path.join(_BASE_DIR, "utils", "logo.jpeg"),
         os.path.join(_BASE_DIR, "utils", "logo.jpg"),
         os.path.join(_BASE_DIR, "utils", "logo.png"),

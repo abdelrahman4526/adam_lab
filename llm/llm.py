@@ -16,7 +16,7 @@ def get_gemini():
         model=Config.OPENAI_MODEL,
         api_key=api_key,
         use_responses_api=True,
-        reasoning={"effort": "low"},
+        reasoning={"effort":  "medium"},
         temperature=0.0,
     )
 

@@ -5,20 +5,19 @@ from platforms.http_client import safe_post
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_PUBLIC_REPLY = "شكراً على تعليقك! راسلنا خاصةً للمساعدة. 🙏"
-DEFAULT_PRIVATE_REPLY = "أهلاً! شكراً على تعليقك، كيف نقدر نساعدك؟"
-
+DEFAULT_PUBLIC_REPLY = "منوّرنا يا فندم 💙 ردينا عليك على الخاص، معمل الصدارة تحت أمرك."
+DEFAULT_PRIVATE_REPLY = "أهلاً وسهلاً بحضرتك 💙 معمل الصدارة تحت أمرك، تحب أساعدك في إيه؟"
 
 def _auth_headers(token: str) -> dict:
     return {"Authorization": f"Bearer {token}"}
 
 
 def react_to_comment(comment_id: str, base_url: str, headers: dict):
-    """لايك على التعليق. ثانوي: لو فشل بيتسجل بس من غير alert."""
-    logger.debug("[FB LIKE COMMENT] comment_id=%s", comment_id)
+    """تفاعل (Love) على التعليق. ثانوي: لو فشل بيتسجل بس من غير alert."""
+    logger.debug("[FB LOVE COMMENT] comment_id=%s", comment_id)
     return safe_post(
-        f"{base_url}/{comment_id}/likes",
-        label="Facebook Like",
+        f"{base_url}/{comment_id}/reactions?type=LOVE",  # التعديل هنا
+        label="Facebook Love Reaction",
         alert=False,
         headers=headers,
         timeout=(5, 10),
