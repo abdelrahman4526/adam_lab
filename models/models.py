@@ -34,9 +34,9 @@ class Laboratory(db.Model):
     id = db.Column(db.Integer, primary_key=True) # Incremental ID
     name = db.Column(db.String(100), nullable=False) # Name of the laboratory (used for agent prompt)
     location = db.Column(db.String(100), nullable=False) # Location of the laboratory (used for agent prompt)
-    description = db.Column(db.String(200), nullable=True) # Description, work hours, or details (used for agent prompt)
-
-    # Relationships
+    description = db.Column(db.Text, nullable=True) # Description, work hours, or details (used for agent prompt)
+   
+    
     subscription = db.relationship('Subscription', backref='laboratory', uselist=False, lazy=True)
     lab_services = db.relationship('LabService', backref='laboratory', lazy=True)
     pages = db.relationship('Page', backref='laboratory', lazy=True)
@@ -47,18 +47,47 @@ class Laboratory(db.Model):
 Lab = Laboratory
 
 
+class Branch(db.Model):
+    __tablename__ = 'branches'
+    id = db.Column(db.Integer, primary_key=True)
+    laboratory_id = db.Column(db.Integer, db.ForeignKey('laboratories.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)           # اسم الفرع: مثل فرع العباسية
+    address = db.Column(db.String(255), nullable=False)        # العنوان بالتفصيل
+    phone_number = db.Column(db.String(50), nullable=True)     # رقم هاتف الفرع
+    working_hours = db.Column(db.String(200), nullable=True)   # مواعيد العمل: مثل 8 ص - 12 م
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+
+
+
 class LabService(db.Model):
     __tablename__ = 'lab_services'
-    id = db.Column(db.Integer, primary_key=True) # Incremental ID
-    laboratory_id = db.Column(db.Integer, db.ForeignKey('laboratories.id'), nullable=False) # Foreign Key linking to Laboratory
-    name = db.Column(db.String(100), nullable=False,unique=True) # Name of the service (used for agent prompt and search)
-    price = db.Column(db.Float, nullable=False) # Price of the test (used for agent prompt)
-    duration = db.Column(db.Integer) # AI generation field for agent prompt
-    patient_instructions = db.Column(db.TEXT, nullable=True) # Instructions for the patient regarding the test (used for agent prompt)
-    description = db.Column(db.TEXT, nullable=True) # Description of the test (used for agent prompt and RAG search)
-    alias_name = db.Column(db.JSON, nullable=True) # List of alias names for the test (used for agent and search)
-    keywords = db.Column(db.JSON, nullable=True) # List of keywords for the test (used for agent and search)
-    sample_type = db.Column(db.String(100)) # Sample type required for the test (used for agent prompt)
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    laboratory_id = db.Column(
+        db.Integer,
+        db.ForeignKey('laboratories.id'),
+        nullable=False
+    )
+
+    name = db.Column(db.String(100), nullable=False, unique=True)
+
+    # Pricing
+    general_price_max = db.Column(db.Numeric(10, 2), nullable=False)
+    general_price_min = db.Column(db.Numeric(10, 2), nullable=False)
+    el_adel_price = db.Column(db.Numeric(10, 2), nullable=True)
+
+    duration = db.Column(db.Integer)
+
+    patient_instructions = db.Column(db.TEXT, nullable=True)
+    description = db.Column(db.TEXT, nullable=True)
+
+    alias_name = db.Column(db.JSON, nullable=True)
+    keywords = db.Column(db.JSON, nullable=True)
+
+    sample_type = db.Column(db.String(100))
 
 
 class Platform(db.Model):
@@ -80,7 +109,7 @@ class Page(db.Model):
     token = db.Column(db.Text, nullable=False) # Access token for page permissions (from Facebook Developer)
     platform_id = db.Column(db.Integer, db.ForeignKey('platforms.id'), nullable=False) # Foreign Key linking to Platform
     laboratory_id = db.Column(db.Integer, db.ForeignKey('laboratories.id'), nullable=False) # Foreign Key linking to Laboratory
-
+    
     # Relationships
     clients = db.relationship('Client', backref='page', lazy=True, cascade="all, delete-orphan")
 
@@ -110,13 +139,18 @@ class Booking(db.Model):
     name = db.Column(db.String(120), nullable=False) # Name of the client or patient
     details = db.Column(db.Text) # The tests the user wants to book
     date = db.Column(db.String(100)) # Date of the booking
-    phone_number = db.Column(db.String(50)) # Phone number associated with the booking
+    phone_number = db.Column(db.String(50))
+    secondary_phone_number = db.Column(
+    db.String(20),
+    nullable=True,
+    default=None
+) # Phone number associated with the booking
     status = db.Column(db.Enum(Status), default=Status.PENDING) # Status of the booking (e.g., PENDING)
     booking_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc)) # Timestamp of when the booking was saved to DB
     time = db.Column(db.String(20), nullable=True) # Specific time requested by the user for the booking
     comes_from = db.Column(db.String(100)) # Source platform (e.g., WhatsApp, Facebook)
     address = db.Column(db.String(255), nullable=False) # Address of the user or patient
-
+    total = db.Column(db.Numeric(10, 2), nullable=True, default=None)
 
 class Inquiry(db.Model):
     __tablename__ = 'inquiries'
@@ -195,3 +229,14 @@ class Bundle(db.Model):
     price = db.Column(db.Float, nullable=False)
     description=db.Column(db.Text())  
     instructions = db.Column(db.Text())
+
+class ResultRequest(db.Model):
+    __tablename__ = 'result_requests'
+
+    id = db.Column(db.Integer, primary_key=True)
+    phone_number = db.Column(db.String(50), nullable=False)   # رقم التليفون المسجل به
+    branch_name = db.Column(db.String(100), nullable=False)   # اسم الفرع الذي أجرى فيه الفحص
+    patient_name = db.Column(db.String(100), nullable=True)   # اسم المريض (اختياري)
+    status = db.Column(db.Enum(Status), default=Status.PENDING) # الحالة: Pending / Reviewed / Attended
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    comes_from = db.Column(db.String(100), default="unknown") # المنصة (واتساب / فيسبوك)

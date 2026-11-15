@@ -47,7 +47,19 @@ def inquiry_node(state: AgentState) -> dict:
     sender_id = state.get("sender_id")
 
     # 2. Fetch dynamic Lab Info & Bundles Context from DB
-    lab_name, lab_location, lab_desc = LaboratoryService.get_current_lab_info()
+    lab_name, lab_location, lab_desc = (
+        LaboratoryService.get_current_lab_info()
+    )
+
+    # Fetch branches from MySQL
+    branches_context = (
+        LaboratoryService.get_current_lab_branches_context()
+    )
+
+    logger.info(
+        "[BOOKING] Loaded laboratory branches context: %s",
+        branches_context
+    )
 
     if is_bundle_query:
         bundles_context = BundleService.get_bundles_formatted_context()
@@ -81,8 +93,24 @@ def inquiry_node(state: AgentState) -> dict:
 LABORATORY INFORMATION
 ====================
 Name: {lab_name}
-Location: {lab_location}
+
 Description: {lab_desc}
+====================
+AVAILABLE LABORATORY BRANCHES
+====================
+{branches_context}
+
+====================
+BRANCH INFORMATION RULES
+====================
+- Branch information is retrieved directly from the laboratory database.
+- When the patient asks about available branches, list only the branches provided above.
+- When asked about a specific branch, provide its exact name, address, phone number, and working hours when available.
+- Never invent branch names, addresses, phone numbers, or working hours.
+- If no branch information is available, clearly state that the information is unavailable.
+- Do not claim that a booking has been assigned to a specific branch unless that assignment has actually been saved.
+
+
 
 ====================
 AVAILABLE BUNDLES

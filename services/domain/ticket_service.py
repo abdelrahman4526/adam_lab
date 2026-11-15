@@ -36,8 +36,8 @@ MUTED = colors.HexColor("#5F6785")
 DARK = colors.HexColor("#1F2340")
 
 # Header text next to the logo
-CLINIC_LINE_1 = "معمل عز لاب"
-CLINIC_LINE_2 = "للتحاليل الطبية الكيميائية"
+CLINIC_LINE_1 = "معامل آدم"
+CLINIC_LINE_2 = "للتحاليل الطبية "
 
 # ── font & assets ─────────────────────────────────────────────────────────────
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -332,8 +332,9 @@ def generate_booking_pdf(
     reference_id: str,
     time: str,
     address: str,
+    secondary_phone_number: str | None = None,
 ) -> bytes:
-    """Generates a styled A4 PDF confirmation ticket for a patient lab booking."""
+    """Build a PDF internally; the Messenger ticket is generated as a PNG below."""
     font = _register_font()
     buffer = io.BytesIO()
 
@@ -351,14 +352,26 @@ def generate_booking_pdf(
 
     fields = [
         ("Patient Name", "اسم المريض", name),
-        ("Phone", "رقم الهاتف", phone),
+        ("Phone", "رقم الهاتف الأساسي", phone),
+    ]
+
+    # Only display the optional secondary number if the patient supplied it.
+    secondary_phone_number = (secondary_phone_number or "").strip()
+    if secondary_phone_number:
+        fields.append((
+            "Secondary Phone", "رقم الهاتف البديل", secondary_phone_number
+        ))
+
+    fields.extend([
         ("Appointment Date", "تاريخ الموعد", date),
         ("Required Analysis", "التحاليل المطلوبة", details),
         ("Address", "العنوان", address),
         ("Time", "الوقت", time),
-    ]
+    ])
 
-    title_bar, reference_badge = _build_title_and_reference(usable_w, reference_id, font)
+    title_bar, reference_badge = _build_title_and_reference(
+        usable_w, reference_id, font
+    )
 
     story = [
         _build_brand_strip(usable_w),
@@ -374,7 +387,10 @@ def generate_booking_pdf(
     ]
 
     doc.build(story)
-    return buffer.getvalue()
+    pdf_bytes = buffer.getvalue()
+    if not pdf_bytes.startswith(b"%PDF"):
+        raise ValueError("Booking PDF generation returned invalid PDF bytes")
+    return pdf_bytes
 
 
 def generate_booking_img(
@@ -386,19 +402,44 @@ def generate_booking_img(
     time: str,
     address: str,
     dpi: int = 200,
+    secondary_phone_number: str | None = None,
 ) -> bytes:
-    """Generates the booking card directly as a PNG image byte string."""
+    """Return actual PNG bytes suitable for a Messenger image attachment."""
     try:
         pdf_bytes = generate_booking_pdf(
-            name=name, phone=phone, date=date, details=details,
-            reference_id=reference_id, time=time, address=address,
+            name=name,
+            phone=phone,
+            date=date,
+            details=details,
+            reference_id=reference_id,
+            time=time,
+            address=address,
+            secondary_phone_number=secondary_phone_number,
         )
 
-        with fitz.open(stream=pdf_bytes, filetype="pdf") as doc:
-            zoom = dpi / 72
-            pix = doc[0].get_pixmap(matrix=fitz.Matrix(zoom, zoom))
-            return pix.tobytes("png")
+        with fitz.open(stream=pdf_bytes, filetype="pdf") as pdf_doc:
+            if pdf_doc.page_count == 0:
+                raise ValueError("Booking PDF has no pages")
+            page = pdf_doc.load_page(0)
+            zoom = dpi / 72.0
+            pix = page.get_pixmap(
+                matrix=fitz.Matrix(zoom, zoom),
+                colorspace=fitz.csRGB,
+                alpha=False,
+            )
+            png_bytes = pix.tobytes("png")
+
+        png_magic = bytes.fromhex("89504e470d0a1a0a")
+        if not png_bytes.startswith(png_magic):
+            raise ValueError("Booking image generation did not return PNG bytes")
+
+        logger.info(
+            "[generate_booking_img] PNG generated | reference_id=%s | size=%s",
+            reference_id,
+            len(png_bytes),
+        )
+        return png_bytes
 
     except Exception:
-        logger.exception("[generate_booking_img] Failed")
+        logger.exception("[generate_booking_img] Failed | reference_id=%s", reference_id)
         raise

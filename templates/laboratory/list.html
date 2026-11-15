@@ -1,95 +1,921 @@
+
 {% extends "base.html" %}
 
-{% block title %}إدارة المعامل — معمل عز لاب{% endblock %}
-
+{% block title %}إدارة المعامل والفروع{% endblock %}
 {% block topbar_title %}إدارة المعامل والفروع{% endblock %}
-{% block topbar_sub %}قائمة الفروع والمعامل التابعة للمنظومة{% endblock %}
-
-
+{% block topbar_sub %}عرض المعامل وإدارة الفروع التابعة لها{% endblock %}
+{% block topbar_actions %}{% endblock %}
 
 {% block content %}
 
-<div class="ts-stats-strip">
-  <div class="ts-stat-pill">
-    <div class="ts-stat-pill-icon si-blue"><i data-lucide="building-2"></i></div>
+{% set selection = namespace(lab=none) %}
+{% set selected_id = request.args.get('laboratory_id', '') %}
+
+{% for lab in laboratories %}
+  {% if lab.id|string == selected_id %}
+    {% set selection.lab = lab %}
+  {% endif %}
+{% endfor %}
+
+{% if selection.lab is none and laboratories %}
+  {% set selection.lab = laboratories[0] %}
+{% endif %}
+
+{% set selected_lab = current_lab if current_lab is defined and current_lab else selection.lab %}
+
+{% set lab_branches = branches if branches is defined and branches is not none else (selected_lab.branches if selected_lab and selected_lab.branches is defined else []) %}
+
+<style>
+.al-page,
+.al-page * {
+  box-sizing: border-box;
+}
+
+.al-page {
+  direction: rtl;
+  max-width: 1250px;
+  margin: auto;
+  color: #1e304b;
+}
+
+.al-toolbar,
+.al-card {
+  background: #fff;
+  border: 1px solid #e4eaf2;
+  border-radius: 17px;
+  box-shadow: 0 5px 20px rgba(20,39,69,.045);
+}
+
+.al-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 22px 25px;
+  margin-bottom: 20px;
+}
+
+.al-heading {
+  margin: 0 0 6px;
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.al-hint {
+  margin: 0;
+  color: #7c899b;
+  font-size: 13px;
+}
+
+.al-actions {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.al-select-wrap {
+  display: grid;
+  gap: 6px;
+}
+
+.al-select-wrap label,
+.al-field label {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.al-select,
+.al-field input,
+.al-field textarea {
+  width: 100%;
+  border: 1px solid #dce4ef;
+  border-radius: 10px;
+  background: #fff;
+  color: #243652;
+  padding: 11px 12px;
+  font: inherit;
+  font-size: 14px;
+}
+
+.al-select {
+  min-width: 205px;
+  height: 43px;
+}
+
+.al-field textarea {
+  resize: vertical;
+  min-height: 85px;
+}
+
+.al-select:focus,
+.al-field input:focus,
+.al-field textarea:focus {
+  outline: none;
+  border-color: #7691c0;
+  box-shadow: 0 0 0 3px #ecf1fb;
+}
+
+.al-btn {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  min-height: 43px;
+  padding: 0 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.al-btn i {
+  width: 16px;
+  height: 16px;
+}
+
+.al-btn-main {
+  background: #dc294c;
+  color: #fff;
+}
+
+.al-btn-main:hover {
+  background: #c91e40;
+  color: #fff;
+}
+
+.al-btn-neutral {
+  background: #f7f9fc;
+  border-color: #dce4ee;
+  color: #30435f;
+}
+
+.al-btn-danger {
+  background: #fff5f6;
+  border-color: #f4dbe0;
+  color: #c32a45;
+}
+
+.al-btn-small {
+  min-height: 35px;
+  padding: 0 11px;
+}
+
+.al-card {
+  overflow: hidden;
+}
+
+.al-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 23px 26px;
+  border-bottom: 1px solid #edf1f6;
+}
+
+.al-title-line {
+  display: flex;
+  gap: 13px;
+  align-items: center;
+}
+
+.al-icon {
+  width: 45px;
+  height: 45px;
+  background: #edf2fc;
+  color: #476093;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+}
+
+.al-icon i {
+  width: 22px;
+  height: 22px;
+}
+
+.al-lab-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.al-caption {
+  margin: 5px 0 0;
+  color: #8994a4;
+  font-size: 12px;
+}
+
+.al-counter {
+  padding: 7px 12px;
+  border-radius: 999px;
+  color: #3d588c;
+  background: #edf2fc;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.al-list {
+  padding: 0 25px;
+}
+
+.al-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 19px 0;
+  border-bottom: 1px solid #edf1f6;
+}
+
+.al-item:last-child {
+  border-bottom: none;
+}
+
+.al-item-info {
+  display: flex;
+  align-items: start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.al-item-name {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.al-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 19px;
+  color: #728198;
+  font-size: 13px;
+}
+
+.al-details span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.al-details i {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.al-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.al-empty {
+  padding: 60px 20px;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 13px;
+}
+
+.al-empty h3,
+.al-empty p {
+  margin: 0;
+}
+
+.al-empty h3 {
+  font-size: 17px;
+}
+
+.al-empty p {
+  font-size: 13px;
+  color: #79879a;
+}
+
+/* Modal */
+
+.al-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(17,29,50,.62);
+  padding: 16px;
+  align-items: center;
+  justify-content: center;
+}
+
+.al-modal.is-open {
+  display: flex;
+}
+
+.al-modal-box {
+  width: min(100%, 600px);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 17px;
+  box-shadow: 0 20px 70px rgba(0,0,0,.2);
+}
+
+.al-modal-head,
+.al-modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 19px 22px;
+}
+
+.al-modal-head {
+  border-bottom: 1px solid #edf1f6;
+}
+
+.al-modal-head h3 {
+  margin: 0 0 5px;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.al-modal-head p {
+  margin: 0;
+  font-size: 12px;
+  color: #8491a3;
+}
+
+.al-close {
+  border: none;
+  background: #f2f5fa;
+  cursor: pointer;
+  border-radius: 9px;
+  width: 36px;
+  height: 36px;
+  font-size: 23px;
+}
+
+.al-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 17px;
+  padding: 22px;
+}
+
+.al-field {
+  display: grid;
+  gap: 7px;
+}
+
+.al-field.al-full {
+  grid-column: 1 / -1;
+}
+
+.al-required {
+  color: #d82c4d;
+}
+
+.al-modal-footer {
+  justify-content: flex-start;
+  border-top: 1px solid #edf1f6;
+}
+
+@media (max-width: 700px) {
+  .al-toolbar,
+  .al-card-head {
+    padding: 17px;
+  }
+
+  .al-actions {
+    width: 100%;
+  }
+
+  .al-select-wrap {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .al-select {
+    min-width: 0;
+  }
+
+  .al-list {
+    padding: 0 17px;
+  }
+
+  .al-item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .al-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .al-field.al-full {
+    grid-column: auto;
+  }
+}
+</style>
+
+<div class="al-page" id="adamLabManager">
+
+  <!-- Toolbar -->
+  <section class="al-toolbar">
+
     <div>
-      <div class="ts-stat-pill-value">{{ laboratories|length }}</div>
-      <div class="ts-stat-pill-label">إجمالي المعامل والفروع</div>
+      <h2 class="al-heading">المعامل والفروع</h2>
+      <p class="al-hint">
+        إدارة بيانات المعمل والفروع التابعة له
+      </p>
     </div>
-  </div>
-  <div class="ts-stat-pill">
-    <div class="ts-stat-pill-icon si-purple"><i data-lucide="test-tube-2"></i></div>
-    <div>
-      <div class="ts-stat-pill-value">{{ laboratories|map(attribute='lab_services')|map('length')|sum }}</div>
-      <div class="ts-stat-pill-label">إجمالي التحاليل المرتبطة</div>
+
+    <div class="al-actions">
+
+      <form
+        class="al-select-wrap"
+        action="{{ url_for('laboratory.list_laboratories') }}"
+        method="GET"
+      >
+        <label for="labSelect">اختر المعمل</label>
+
+        <select
+          id="labSelect"
+          class="al-select"
+          name="laboratory_id"
+          onchange="this.form.submit()"
+          {% if not laboratories %}disabled{% endif %}
+        >
+          {% for lab in laboratories %}
+            <option
+              value="{{ lab.id }}"
+              {% if selected_lab and lab.id == selected_lab.id %}
+                selected
+              {% endif %}
+            >
+              {{ lab.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </form>
+
+      {% if selected_lab %}
+
+        <a
+          class="al-btn al-btn-neutral"
+          href="{{ url_for('laboratory.edit_laboratory', lab_id=selected_lab.id) }}"
+        >
+          <i data-lucide="pencil"></i>
+          تعديل المعمل
+        </a>
+
+        <button
+          type="button"
+          class="al-btn al-btn-main"
+          id="openBranchModal"
+        >
+          <i data-lucide="plus-circle"></i>
+          إضافة فرع جديد
+        </button>
+
+      {% else %}
+
+        <a
+          class="al-btn al-btn-main"
+          href="{{ url_for('laboratory.create_laboratory') }}"
+        >
+          <i data-lucide="plus-circle"></i>
+          إضافة معمل جديد
+        </a>
+
+      {% endif %}
+
     </div>
-  </div>
+  </section>
+
+  <!-- Branch List -->
+  <section class="al-card">
+
+    {% if selected_lab %}
+
+      <div class="al-card-head">
+
+        <div class="al-title-line">
+
+          <div class="al-icon">
+            <i data-lucide="building-2"></i>
+          </div>
+
+          <div>
+            <h2 class="al-lab-title">
+              {{ selected_lab.name }}
+            </h2>
+            <p class="al-caption">
+              الفروع المسجلة لهذا المعمل
+            </p>
+          </div>
+
+        </div>
+
+        <span class="al-counter">
+          {{ lab_branches|length }} فرع
+        </span>
+
+      </div>
+
+      {% if lab_branches %}
+
+        <div class="al-list">
+
+          {% for branch in lab_branches %}
+
+            <div class="al-item">
+
+              <div class="al-item-info">
+
+                <div class="al-icon">
+                  <i data-lucide="building"></i>
+                </div>
+
+                <div>
+                  <h3 class="al-item-name">
+                    {{ branch.name }}
+                  </h3>
+
+                  <div class="al-details">
+
+                    {% if branch.address %}
+                      <span>
+                        <i data-lucide="map-pin"></i>
+                        {{ branch.address }}
+                      </span>
+                    {% endif %}
+
+                    {% if branch.phone_number %}
+                      <span>
+                        <i data-lucide="phone"></i>
+                        {{ branch.phone_number }}
+                      </span>
+                    {% endif %}
+
+                    {% if branch.working_hours %}
+                      <span>
+                        <i data-lucide="clock"></i>
+                        {{ branch.working_hours }}
+                      </span>
+                    {% endif %}
+
+                  </div>
+                </div>
+
+              </div>
+
+              <div class="al-item-actions">
+
+                <!-- Edit Branch -->
+                <button
+                  type="button"
+                  class="al-btn al-btn-neutral al-btn-small al-edit"
+                  data-url="{{ url_for('laboratory.edit_branch', branch_id=branch.id) }}"
+                  data-name="{{ branch.name }}"
+                  data-address="{{ branch.address or '' }}"
+                  data-phone="{{ branch.phone_number or '' }}"
+                  data-hours="{{ branch.working_hours or '' }}"
+                >
+                  <i data-lucide="pencil"></i>
+                  تعديل
+                </button>
+
+                <!-- Delete Branch -->
+                <form
+                  method="POST"
+                  action="{{ url_for('laboratory.delete_branch', branch_id=branch.id) }}"
+                  class="al-delete-form"
+                >
+
+                  {% if csrf_token is defined %}
+                    <input
+                      type="hidden"
+                      name="csrf_token"
+                      value="{{ csrf_token() }}"
+                    >
+                  {% endif %}
+
+                  <button
+                    type="submit"
+                    class="al-btn al-btn-danger al-btn-small"
+                  >
+                    <i data-lucide="trash-2"></i>
+                    حذف
+                  </button>
+
+                </form>
+
+              </div>
+
+            </div>
+
+          {% endfor %}
+
+        </div>
+
+      {% else %}
+
+        <div class="al-empty">
+          <div class="al-icon">
+            <i data-lucide="building-2"></i>
+          </div>
+
+          <h3>لا توجد فروع مسجلة</h3>
+          <p>ابدأ بإضافة فرع للمعمل، مع العنوان وبيانات التواصل.</p>
+
+          <button
+            type="button"
+            class="al-btn al-btn-main al-empty-add"
+          >
+            <i data-lucide="plus-circle"></i>
+            إضافة أول فرع
+          </button>
+        </div>
+
+      {% endif %}
+
+    {% else %}
+
+      <div class="al-empty">
+        <div class="al-icon">
+          <i data-lucide="building-2"></i>
+        </div>
+
+        <h3>لا توجد معامل مسجلة</h3>
+        <p>قم بإضافة معمل أولًا.</p>
+
+        <a
+          class="al-btn al-btn-main"
+          href="{{ url_for('laboratory.create_laboratory') }}"
+        >
+          إضافة معمل
+        </a>
+      </div>
+
+    {% endif %}
+
+  </section>
+
+  <!-- Add / Edit Branch Modal -->
+  {% if selected_lab %}
+
+    <div
+      class="al-modal"
+      id="branchModal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="branchModalTitle"
+      aria-hidden="true"
+    >
+
+      <div class="al-modal-box">
+
+        <div class="al-modal-head">
+
+          <div>
+            <h3 id="branchModalTitle">
+              إضافة فرع جديد
+            </h3>
+            <p>اكتب بيانات الفرع، بدون اختيار مدينة أو منطقة</p>
+          </div>
+
+          <button
+            class="al-close"
+            type="button"
+            id="closeBranchModal"
+            aria-label="إغلاق"
+          >
+            &times;
+          </button>
+
+        </div>
+
+        <form
+          id="branchForm"
+          method="POST"
+          action="{{ url_for('laboratory.create_branch') }}"
+        >
+
+          {% if csrf_token is defined %}
+            <input
+              type="hidden"
+              name="csrf_token"
+              value="{{ csrf_token() }}"
+            >
+          {% endif %}
+
+          <input
+            type="hidden"
+            name="laboratory_id"
+            value="{{ selected_lab.id }}"
+          >
+
+          <div class="al-form-grid">
+
+            <div class="al-field al-full">
+              <label for="branchName">
+                اسم الفرع
+                <span class="al-required">*</span>
+              </label>
+
+              <input
+                id="branchName"
+                name="name"
+                maxlength="100"
+                required
+                placeholder="مثال: الفرع الرئيسي"
+              >
+            </div>
+
+            <div class="al-field al-full">
+              <label for="branchAddress">
+                عنوان الفرع
+                <span class="al-required">*</span>
+              </label>
+
+              <textarea
+                id="branchAddress"
+                name="address"
+                maxlength="255"
+                required
+                placeholder="اكتب عنوان الفرع بالتفصيل"
+              ></textarea>
+            </div>
+
+            <div class="al-field">
+              <label for="branchPhone">
+                رقم الهاتف (اختياري)
+              </label>
+
+              <input
+                id="branchPhone"
+                name="phone_number"
+                maxlength="50"
+                placeholder="رقم التواصل"
+              >
+            </div>
+
+            <div class="al-field">
+              <label for="branchHours">
+                مواعيد العمل (اختياري)
+              </label>
+
+              <input
+                id="branchHours"
+                name="working_hours"
+                maxlength="200"
+                placeholder="مثال: 9 صباحًا - 9 مساءً"
+              >
+            </div>
+
+          </div>
+
+          <div class="al-modal-footer">
+
+            <button
+              type="submit"
+              class="al-btn al-btn-main"
+              id="saveBranchBtn"
+            >
+              حفظ الفرع
+            </button>
+
+            <button
+              type="button"
+              class="al-btn al-btn-neutral"
+              id="cancelBranchBtn"
+            >
+              إلغاء
+            </button>
+
+          </div>
+        </form>
+
+      </div>
+    </div>
+
+  {% endif %}
+
 </div>
 
-<div class="table-wrap ts-table-wrap">
-  <table class="data-table ts-data-table">
-    <thead>
-      <tr>
-        <th style="width: 60px;">#</th>
-        <th>اسم المعمل / الفرع</th>
-        <th>الموقع والمدينة</th>
-        <th>الوصف</th>
-        <th>التحاليل المرتبطة</th>
-        <th style="width: 140px; text-align: center;">الإجراءات</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for lab in laboratories %}
-      <tr>
-        <td><span class="ts-id-chip">#{{ lab.id }}</span></td>
-        <td>
-          <div class="ts-test-name-cell">
-            <div class="ts-test-avatar lb-avatar"><i data-lucide="building-2"></i></div>
-            <div class="ts-test-name-text">{{ lab.name }}</div>
-          </div>
-        </td>
-        <td>
-          <span class="ts-lab-tag">
-            <i data-lucide="map-pin"></i>
-            {{ lab.location }}
-          </span>
-        </td>
-        <td>
-          <span style="font-size: 0.82rem; color: var(--ink-500);">
-            {{ lab.description or '—' }}
-          </span>
-        </td>
-        <td>
-          <span class="status-chip new">
-            <i data-lucide="test-tube-2" style="width: 12px; height: 12px;"></i>
-            {{ lab.lab_services|length if lab.lab_services else 0 }} تحليل
-          </span>
-        </td>
-        <td style="text-align: center;">
-          <a href="{{ url_for('laboratory.edit_laboratory', lab_id=lab.id) }}"
-             class="btn btn-outline btn-sm ts-action-btn">
-            <i data-lucide="edit-2"></i>
-            تعديل
-          </a>
-        </td>
-      </tr>
-      {% else %}
-      <tr>
-        <td colspan="6" style="text-align: center; padding: 56px 20px;">
-          <div class="ts-empty-icon"><i data-lucide="building-2"></i></div>
-          <h4 style="font-size: 1.05rem; margin-bottom: 6px;">لا توجد معامل مضافة حالياً</h4>
-          <p style="color: var(--ink-500); font-size: 0.85rem; margin-bottom: 18px;">
-            ابدأ بإضافة معمل أو فرع جديد إلى المنظومة.
-          </p>
-          <a href="{{ url_for('laboratory.create_laboratory') }}" class="btn btn-primary">
-            <i data-lucide="plus-circle"></i>
-            إضافة معمل / فرع جديد
-          </a>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
+<script>
+(() => {
+  const root = document.getElementById('adamLabManager');
+
+  if (!root) return;
+
+  const modal = root.querySelector('#branchModal');
+  const form = root.querySelector('#branchForm');
+
+  if (!modal || !form) return;
+
+  const createUrl = {{ url_for('laboratory.create_branch')|tojson }};
+
+  const title = root.querySelector('#branchModalTitle');
+  const saveButton = root.querySelector('#saveBranchBtn');
+
+  const nameField = root.querySelector('#branchName');
+  const addressField = root.querySelector('#branchAddress');
+  const phoneField = root.querySelector('#branchPhone');
+  const hoursField = root.querySelector('#branchHours');
+
+  function openModal() {
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden', 'false');
+
+    document.body.style.overflow = 'hidden';
+    nameField.focus();
+  }
+
+  function closeModal() {
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden', 'true');
+
+    document.body.style.overflow = '';
+  }
+
+  function addBranch() {
+    form.reset();
+    form.action = createUrl;
+
+    title.textContent = 'إضافة فرع جديد';
+    saveButton.textContent = 'حفظ الفرع';
+
+    openModal();
+  }
+
+  function editBranch(button) {
+    form.reset();
+
+    form.action = button.dataset.url;
+
+    title.textContent = 'تعديل بيانات الفرع';
+    saveButton.textContent = 'حفظ التعديلات';
+
+    nameField.value = button.dataset.name || '';
+    addressField.value = button.dataset.address || '';
+    phoneField.value = button.dataset.phone || '';
+    hoursField.value = button.dataset.hours || '';
+
+    openModal();
+  }
+
+  root.querySelector('#openBranchModal')
+    ?.addEventListener('click', addBranch);
+
+  root.querySelector('.al-empty-add')
+    ?.addEventListener('click', addBranch);
+
+  root.querySelectorAll('.al-edit').forEach(button => {
+    button.addEventListener('click', () => {
+      editBranch(button);
+    });
+  });
+
+  root.querySelectorAll('.al-delete-form').forEach(deleteForm => {
+    deleteForm.addEventListener('submit', event => {
+      if (!confirm('هل أنت متأكد من حذف هذا الفرع؟')) {
+        event.preventDefault();
+      }
+    });
+  });
+
+  root.querySelector('#closeBranchModal')
+    ?.addEventListener('click', closeModal);
+
+  root.querySelector('#cancelBranchBtn')
+    ?.addEventListener('click', closeModal);
+
+  modal.addEventListener('click', event => {
+    if (event.target === modal) {
+      closeModal();
+    }
+  });
+
+  document.addEventListener('keydown', event => {
+    if (
+      event.key === 'Escape' &&
+      modal.classList.contains('is-open')
+    ) {
+      closeModal();
+    }
+  });
+
+})();
+</script>
 
 {% endblock %}

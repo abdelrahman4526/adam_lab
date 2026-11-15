@@ -5,6 +5,7 @@ software_services/inquiry_service.py
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from models.models import Inquiry, Status, db
 from services.messaging.client_service import ClientService
@@ -197,45 +198,111 @@ class InquiryService:
             logger.exception("[InquiryService.update_status] Error")
             return InquiryResult(False, None, "حدث خطأ أثناء تحديث الحالة")
 
-    def _build_prescription_reply(self, services, discount_type=None):
+    @staticmethod
+    def _valid_price(value, service_name):
+        """Return a verified positive Decimal price or reject the quote."""
+        try:
+            if value is None or isinstance(value, bool):
+                raise ValueError
+            price = Decimal(str(value))
+            if not price.is_finite() or price <= 0:
+                raise ValueError
+            return price
+        except (ValueError, InvalidOperation, TypeError):
+            raise ValueError(
+                f"لا يوجد سعر مؤكد للتحليل: {service_name}. "
+                "يرجى مراجعة السعر قبل إرسال التأكيد."
+            )
+
+    @staticmethod
+    def _parse_discount(discount_percentage):
+        """Validate manual discount independently of route-side validation."""
+        try:
+            if isinstance(discount_percentage, bool):
+                raise ValueError
+            percent = Decimal(str(discount_percentage))
+            if not percent.is_finite() or not (Decimal("0") <= percent <= Decimal("100")):
+                raise ValueError
+            return percent
+        except (ValueError, InvalidOperation, TypeError):
+            raise ValueError("نسبة الخصم غير صحيحة. يجب أن تكون بين 0 و100.")
+
+    @staticmethod
+    def _money(amount):
+        """Display EGP without unnecessary trailing zeroes."""
+        rounded = amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        return format(rounded, "f").rstrip("0").rstrip(".")
+
+    def _build_prescription_reply(
+        self, services, discount_type=None, discount_percentage=None
+    ):
         """
-        Build the doctor's confirmation reply text and a comma-separated
-        services list. Computes the total price across all selected services,
-        and applies an optional discount (general / insurance).
+        Build a customer reply from verified regular test prices.
+
+        An explicit manual discount overrides legacy discount_type.
+        Using Decimal avoids floating-point rounding errors.
         """
+        if discount_percentage is not None:
+            percent = self._parse_discount(discount_percentage)
+            discount_label = f"خصم {self._money(percent)}%"
+        else:
+            legacy = self.DISCOUNTS.get(discount_type) or {}
+            percent = self._parse_discount(legacy.get("percent", 0))
+            discount_label = legacy.get("label", "خصم")
+
         message_lines = [
             "📋 تمت مراجعة الروشتة الخاصة بك من قبل الطبيب.",
             "التحاليل المطلوبة:",
-            ""
+            "",
         ]
-
-        total_price = 0.0
+        total_price = Decimal("0")
         service_names = []
+        seen_ids = set()
 
         for s in services:
-            service_names.append(s.name)
-            total_price += float(s.price or 0)
+            # Avoid charging the same test twice if its ID was submitted twice.
+            service_id = getattr(s, "id", None)
+            if service_id is not None:
+                if service_id in seen_ids:
+                    continue
+                seen_ids.add(service_id)
+
+            service_name = s.name
+            # LabService uses general_price_max; it does not have `price`.
+            price = self._valid_price(
+                getattr(s, "general_price_max", None), service_name
+            )
+            total_price += price
+            service_names.append(service_name)
 
             message_lines.extend([
-                f"▫️ {s.name}",
-                f"   • السعر: {s.price} ج.م",
+                f"▫️ {service_name}",
+                f"   • السعر: {self._money(price)} ج.م",
                 f"   • العينة: {s.sample_type or 'غير محددة'}",
                 f"   • النتيجة خلال: {s.duration or 'غير محددة'}",
                 f"   • التعليمات: {s.patient_instructions or 'لا توجد تعليمات'}",
-                ""
+                "",
             ])
 
-        message_lines.append(f"💰 الإجمالي: {total_price:g} ج.م")
+        if not service_names:
+            raise ValueError("يرجى تحديد تحليل واحد على الأقل.")
 
-        discount = self.DISCOUNTS.get(discount_type)
-        if discount:
-            discount_amount = round(total_price * discount['percent'] / 100, 2)
+        total_price = total_price.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        message_lines.append(f"💰 الإجمالي: {self._money(total_price)} ج.م")
+
+        if percent > 0:
+            discount_amount = (
+                total_price * percent / Decimal("100")
+            ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
             final_price = total_price - discount_amount
-            message_lines.append(f"🎁 {discount['label']}: -{discount_amount:g} ج.م")
-            message_lines.append(f"✅ الإجمالي بعد الخصم: {final_price:g} ج.م")
+            message_lines.append(
+                f"🎁 {discount_label}: -{self._money(discount_amount)} ج.م"
+            )
+            message_lines.append(
+                f"✅ الإجمالي بعد الخصم: {self._money(final_price)} ج.م"
+            )
 
-        message_lines.append('لتأكيد الحجز، ابعتلي كلمة "تأكيد" وهنكمل معاك خطوات الحجز 👍')
-
+        
         return "\n".join(message_lines), ", ".join(service_names)
 
     def _resolve_inquiry_and_services(self, inquiry_id, selected_service_ids):
@@ -320,23 +387,41 @@ class InquiryService:
             )
             return False, "تم حفظ المراجعة في النظام، لكن حدث خطأ أثناء إرسال الرسالة للعميل فعليًا. برجاء إعادة الإرسال يدويًا."
 
-    def confirm_and_reply(self, selected_service_ids, inquiry_id=None, discount_type=None):
+    def confirm_and_reply(
+        self,
+        selected_service_ids,
+        inquiry_id=None,
+        discount_type=None,
+        discount_percentage=None,
+    ):
         """
-        Confirm doctor-selected services for an inquiry and dispatch the reply via the origin channel.
-        discount_type is optional: a key of DISCOUNTS ('general' / 'insurance') or None for no discount.
+        Confirm selected tests and send the doctor's reply.
+
+        `discount_percentage` is the manually entered administrative discount
+        (0..100). It takes precedence over the older `discount_type` argument.
+        Existing callers passing `discount_type` continue to work.
         """
         target_id = inquiry_id or self.inquiry_id
-        inquiry, selected_services, error = self._resolve_inquiry_and_services(target_id, selected_service_ids)
+        inquiry, selected_services, error = self._resolve_inquiry_and_services(
+            target_id, selected_service_ids
+        )
         if error:
             return False, error
 
         if discount_type not in self.DISCOUNTS:
             discount_type = None
 
-        reply_text, services_mentioned = self._build_prescription_reply(selected_services, discount_type)
+        try:
+            reply_text, services_mentioned = self._build_prescription_reply(
+                selected_services,
+                discount_type=discount_type,
+                discount_percentage=discount_percentage,
+            )
+        except ValueError as exc:
+            return False, str(exc)
+
         inquiry.services_mentioned = services_mentioned
         inquiry.status = Status.REVIEWED
-
         return self._dispatch_to_channel(inquiry.comes_from, reply_text)
 
     @staticmethod

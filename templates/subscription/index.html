@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
-{% block title %}إدارة الاشتراك — معمل عز لاب{% endblock %}
+{% block title %}إدارة الاشتراك —معامل آدم{% endblock %}
 
 {% block topbar_title %}إدارة الاشتراك{% endblock %}
-{% block topbar_sub %}متابعة الباقة، الاستخدام، والتحكم الكامل في خدمة الذكاء الاصطناعي — معمل عز لاب{% endblock %}
+{% block topbar_sub %}متابعة الباقة، الاستخدام، والتحكم الكامل في خدمة الذكاء الاصطناعي —معامل آدم{% endblock %}
 
 {% block content %}
 
@@ -52,7 +52,7 @@
       <div class="info-icon si-blue"><i data-lucide="calendar"></i></div>
       <div class="info-body">
         <div class="info-label">تاريخ البدء</div>
-        <div class="info-value">{{ subscription.start_date.strftime('%d %b %Y') if subscription.start_date else '—' }}</div>
+        <div class="info-value">{{ subscription.start_date|local_dt('%d %b %Y') if subscription.start_date else '—' }}</div>
       </div>
     </div>
 
@@ -60,7 +60,7 @@
       <div class="info-icon si-purple"><i data-lucide="calendar-x"></i></div>
       <div class="info-body">
         <div class="info-label">تاريخ الانتهاء</div>
-        <div class="info-value">{{ subscription.end_date.strftime('%d %b %Y') if subscription.end_date else '—' }}</div>
+        <div class="info-value">{{ subscription.end_date|local_dt('%d %b %Y') if subscription.end_date else '—' }}</div>
       </div>
     </div>
 

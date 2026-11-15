@@ -53,7 +53,7 @@ LOG_LEVEL = getattr(logging, LOG_LEVEL_NAME, logging.DEBUG)
 
 # ── Logger Setup & Persistent File Handlers ─────────────────────────────────────
 
-LOGGER_NAME = "ezz lab.trace"
+LOGGER_NAME = "ADAM lab.trace"
 _logger = logging.getLogger(LOGGER_NAME)
 _logger.setLevel(LOG_LEVEL)
 

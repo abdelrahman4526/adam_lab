@@ -1,4 +1,5 @@
 import logging
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from sqlalchemy.exc import IntegrityError
 
@@ -8,6 +9,36 @@ from services.shared.generation_service import regenerate_test, generate_test
 from schemas.generation import TestGenerationResult
 
 logger = logging.getLogger(__name__)
+
+# Distinguish an omitted El Adel price from explicitly clearing it in the edit form.
+_UNSET = object()
+_MONEY_STEP = Decimal("0.01")
+_MAX_ALLOWED_PRICE = Decimal("99999999.99")  # DECIMAL(10, 2)
+
+
+def _parse_price(value, *, required=True):
+    """Parse a non-negative price without binary float rounding errors."""
+    if value is None or (isinstance(value, str) and not value.strip()):
+        if required:
+            raise ValueError("السعر العام مطلوب")
+        return None
+    try:
+        amount = Decimal(str(value).strip())
+        if not amount.is_finite() or amount < 0:
+            raise ValueError("السعر يجب أن يكون رقمًا موجبًا أو صفرًا")
+        amount = amount.quantize(_MONEY_STEP, rounding=ROUND_HALF_UP)
+        if amount > _MAX_ALLOWED_PRICE:
+            raise ValueError("السعر أكبر من الحد المسموح")
+        return amount
+    except (InvalidOperation, TypeError) as exc:
+        raise ValueError("قيمة السعر غير صحيحة") from exc
+
+
+def _discounted_price(general_price_max):
+    """Persist the 20% discount (80% of general_price_max) in general_price_min."""
+    return (general_price_max * Decimal("0.80")).quantize(
+        _MONEY_STEP, rounding=ROUND_HALF_UP
+    )
 
 
 def _parse_tags(raw_list, fallback_str=None):
@@ -114,7 +145,7 @@ class TestsService:
 
     # Search laboratory test services for typeahead / autocomplete
     def search_services(self, query: str = "", limit: int = 15, laboratory_id: int = None):
-        """Autocomplete search over name/aliases/keywords, ranked by match priority. Returns a list of dicts (id, name, price, patient_instructions), or [] on no query or error."""
+        """Autocomplete search over name/aliases/keywords, ranked by match priority. Returns a list of dicts with both displayed prices plus a legacy price alias, or [] on no query or error."""
         if not query or not query.strip():
             return []
 
@@ -148,7 +179,13 @@ class TestsService:
                 {
                     "id": s.id,
                     "name": s.name,
-                    "price": float(s.price or 0),
+                    # Preserve 'price' for existing consumers until their APIs are migrated.
+                    "price": float(s.general_price_max),
+                    "general_price_max": float(s.general_price_max),
+                    "el_adel_price": (
+                        float(s.el_adel_price)
+                        if s.el_adel_price is not None else None
+                    ),
                     "patient_instructions": (s.patient_instructions[:80] + "...") if s.patient_instructions and len(s.patient_instructions) > 80 else (s.patient_instructions or "")
                 }
                 for s in services
@@ -161,7 +198,8 @@ class TestsService:
     def create_lab_service(self, laboratory_id: int = None, name: str = None, price: float = None, description: str = None,
                            patient_instructions: str = None, duration: int = None,
                            sample_type: str = None, keywords: list[str] = None,
-                           alias_name: list[str] = None):
+                           alias_name: list[str] = None,
+                           general_price_max=None, el_adel_price=None):
         """Create a LabService and index it in Qdrant. Duplicate names are rejected via a
         pre-check plus an IntegrityError catch (covers the race window between check and insert —
         requires a unique constraint on LabService.name). Returns (LabService or None, message).
@@ -172,6 +210,13 @@ class TestsService:
             if not name:
                 return None, "اسم التحليل مطلوب"
 
+            if not lab_id:
+                return None, "يرجى اختيار المعمل"
+
+            # 'price' remains an optional legacy input for other callers.
+            max_price = _parse_price(general_price_max if general_price_max is not None else price)
+            adel_price = _parse_price(el_adel_price, required=False)
+
             existing_test = LabService.query.filter_by(name=name).first()
             if existing_test:
                 return None, "Test already exists"
@@ -179,7 +224,9 @@ class TestsService:
             new_test = LabService(
                 laboratory_id=lab_id,
                 name=name,
-                price=price,
+                general_price_max=max_price,
+                general_price_min=_discounted_price(max_price),
+                el_adel_price=adel_price,
                 description=description,
                 patient_instructions=patient_instructions,
                 duration=duration,
@@ -199,6 +246,9 @@ class TestsService:
                 logger.warning("Failed to upsert vector for test %s: %s", new_test.id, ve)
 
             return new_test, "Test created successfully"
+        except ValueError as e:
+            db.session.rollback()
+            return None, str(e)
         except IntegrityError as e:
             db.session.rollback()
             logger.warning("IntegrityError creating test name=%r: %s", name, e)
@@ -211,7 +261,8 @@ class TestsService:
     # Update an existing test service and refresh its vector index
     def update_test(self, test_id: int = None, name: str = None, price: float = None, description: str = None,
                     instructions: str = None, duration: int = None, sample_type: str = None,
-                    keywords: list[str] = None, alias_name: list[str] = None, laboratory_id: int = None):
+                    keywords: list[str] = None, alias_name: list[str] = None, laboratory_id: int = None,
+                    general_price_max=None, el_adel_price=_UNSET):
         """Update the given non-None fields on a LabService and refresh its vector index.
         NOTE: passing laboratory_id moves the test to another lab — confirm this is intended.
         Returns (LabService or None, message); None means not found or the update failed.
@@ -232,8 +283,14 @@ class TestsService:
                 test.laboratory_id = lab_id
             if name is not None:
                 test.name = name
-            if price is not None:
-                test.price = price
+            max_price_value = general_price_max if general_price_max is not None else price
+            if max_price_value is not None:
+                max_price = _parse_price(max_price_value)
+                test.general_price_max = max_price
+                test.general_price_min = _discounted_price(max_price)
+            if el_adel_price is not _UNSET:
+                # None is intentional: an empty El Adel field clears the old value.
+                test.el_adel_price = _parse_price(el_adel_price, required=False)
             if description is not None:
                 test.description = description
             if instructions is not None:
@@ -258,6 +315,9 @@ class TestsService:
                 logger.warning("Failed to upsert vector for test %s: %s", test.id, ve)
 
             return test, "Test updated successfully"
+        except ValueError as e:
+            db.session.rollback()
+            return None, str(e)
         except IntegrityError as e:
             db.session.rollback()
             logger.warning("IntegrityError updating test %s: %s", target_id, e)
@@ -323,10 +383,13 @@ class TestsService:
 
     # Validate and process submitted HTML form data to create a new test service
     def handle_create_test(self, form_data):
-        """Validate form_data (name, laboratory_id, price required) and create a test. Returns (success, message) — message is user-facing Arabic."""
+        """Validate submitted general/El Adel prices and create a test."""
         try:
             name = form_data.get("name", "").strip()
-            price = form_data.get("price")
+            # Accept old 'price' forms temporarily, but save to the new columns.
+            max_price_raw = form_data.get("general_price_max")
+            if max_price_raw is None:
+                max_price_raw = form_data.get("price")
             duration = form_data.get("duration")
             laboratory_id = form_data.get("laboratory_id") or self.laboratory_id
 
@@ -334,8 +397,8 @@ class TestsService:
                 return False, "اسم التحليل مطلوب"
             if not laboratory_id:
                 return False, "يرجى اختيار المعمل"
-            if not price:
-                return False, "سعر التحليل مطلوب"
+            max_price = _parse_price(max_price_raw)
+            adel_price = _parse_price(form_data.get("el_adel_price"), required=False)
 
             keywords_raw = _parse_tags(
                 form_data.getlist("keywords") or form_data.getlist("generated_keywords"),
@@ -349,7 +412,8 @@ class TestsService:
             service, message = self.create_lab_service(
                 laboratory_id=int(laboratory_id),
                 name=name,
-                price=float(price),
+                general_price_max=max_price,
+                el_adel_price=adel_price,
                 duration=int(duration) if duration else None,
                 patient_instructions=form_data.get("patient_instructions") or form_data.get("instructions"),
                 description=form_data.get("description"),
@@ -383,7 +447,16 @@ class TestsService:
 
         try:
             name = actual_form_data.get("name")
-            price = actual_form_data.get("price")
+            max_price_raw = actual_form_data.get("general_price_max")
+            if max_price_raw is None:
+                max_price_raw = actual_form_data.get("price")
+            max_price = _parse_price(max_price_raw) if max_price_raw is not None else None
+
+            # Omitted = preserve previous El Adel price; blank = clear it.
+            adel_price = _UNSET
+            if "el_adel_price" in actual_form_data:
+                adel_price = _parse_price(actual_form_data.get("el_adel_price"), required=False)
+
             duration = actual_form_data.get("duration")
             laboratory_id = actual_form_data.get("laboratory_id") or self.laboratory_id
 
@@ -399,7 +472,8 @@ class TestsService:
             updated_test, message = self.update_test(
                 test_id=actual_test_id,
                 name=name.strip() if name else None,
-                price=float(price) if price else None,
+                general_price_max=max_price,
+                el_adel_price=adel_price,
                 duration=int(duration) if duration else None,
                 instructions=actual_form_data.get("patient_instructions") or actual_form_data.get("instructions"),
                 description=actual_form_data.get("description"),

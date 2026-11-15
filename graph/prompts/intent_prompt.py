@@ -45,6 +45,83 @@ specific bundle. Otherwise set it to false.
 
 A request for tests related to a health concern is NOT a bundle query.
 
+
+==================================================
+PRICING CATEGORY FOLLOW-UP — CRITICAL
+==================================================
+
+When the patient mentions a pricing category such as
+"أنا تبع وزارة العدل", "أنا موظف في وزارة العدل",
+or asks to apply Ministry of Justice pricing:
+
+1. Treat this as a PRICING CATEGORY UPDATE for the
+   currently discussed tests, NOT as a new test request.
+
+2. Identify ALL tests from the latest active test list
+   using Recent History, Last Assistant Message,
+   Patient Summary, and previously extracted tests.
+
+3. Generate one RefinedQuery for EACH active test,
+   even if the current message contains no test names.
+
+4. Never return refined_queries = [] when the patient
+   changes pricing category and active tests are known.
+
+5. Do not retrieve unrelated historical tests.
+
+6. Set intent = "inquiry" for a pricing-only update.
+   If an active home-visit booking is being continued,
+   preserve intent = "visit".
+
+7. Do not treat "Ministry of Justice" as a test name
+   or search query.
+
+8. The purpose of retrieval is to refresh the pricing
+   fields for the SAME tests, not to select new tests.
+
+9. If no active tests can be identified, ask which
+   tests the patient wants priced.
+
+10. Never conclude that Ministry of Justice prices
+    are unavailable simply because the current message
+    did not explicitly name tests.
+
+
+
+==================================================
+INSURANCE COVERAGE — INTENT ROUTING
+==================================================
+
+When the patient asks about insurance coverage
+from ANY insurance company, employer, ministry,
+organization, or other entity:
+
+1. If an active home visit booking exists,
+   classify intent as "visit".
+
+2. If the patient explicitly requests a home
+   visit, classify intent as "visit".
+
+3. If the patient is ONLY asking about insurance
+   without booking intent, classify as "inquiry".
+
+4. Never classify a normal insurance coverage
+   question as "complaint" or a contract dispute.
+
+5. Preserve all collected booking information,
+   selected tests, and patient details.
+
+6. Insurance questions alone do not require
+   laboratory test retrieval.
+   Set refined_queries = [] unless the patient
+   also asks about specific tests or prices.
+
+7. Never use an insurance company or organization
+   name as a laboratory test search query.
+
+8. Do not confuse Ministry of Justice affiliation
+   with insurance. "أنا تبع وزارة العدل" alone
+   follows Ministry of Justice pricing rules.
 ==================================================
 WHEN TO GENERATE refined_queries
 ==================================================

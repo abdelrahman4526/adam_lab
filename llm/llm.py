@@ -1,25 +1,23 @@
-from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from config import Config
 from langchain_openai import ChatOpenAI
 
 
-
 def get_gemini():
-    api_key = Config.OPENAI_API_KEY
+    api_key = Config.OPENROUTER_API_KEY
 
     if not api_key:
         raise ValueError(
-            "OPENAI_API_KEY must be set."
+            "OPENROUTER_API_KEY must be set."
         )
 
     return ChatOpenAI(
-        model=Config.OPENAI_MODEL,
+        model=Config.OPENAI_MODEL,  
         api_key=api_key,
-        use_responses_api=True,
-        reasoning={"effort":  "medium"},
+        base_url="https://openrouter.ai/api/v1",
+        extra_body={"reasoning": {"effort": "medium"}},
         temperature=0.0,
     )
-
 
 
 def get_gemini_embeddings():

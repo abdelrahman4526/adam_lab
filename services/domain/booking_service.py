@@ -1,8 +1,10 @@
+
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from io import BytesIO
-
+from typing import Optional
+from decimal import Decimal, InvalidOperation
 import openpyxl
 from sqlalchemy.exc import IntegrityError
 
@@ -23,7 +25,7 @@ class BookingSaveResult:
 
 class BookingService:
     def __init__(self, booking_id=None, reference_id=None, booking=None):
-        """Initialize the service with a booking ID, reference ID, or loaded booking."""
+        """Initialize with a booking ID, reference ID, or loaded booking."""
         self.booking_id = booking_id
         self.reference_id = reference_id
         self._booking = booking
@@ -38,6 +40,7 @@ class BookingService:
         if self._booking is None:
             if self.booking_id is not None:
                 self._booking = db.session.get(Booking, self.booking_id)
+
             elif self.reference_id is not None:
                 self._booking = Booking.query.filter_by(
                     reference_id=self.reference_id
@@ -57,21 +60,24 @@ class BookingService:
         """
         Fetch paginated bookings using the provided filters.
 
+        Search supports both primary and secondary phone numbers.
         Without search or date filters, only the last 30 days are returned.
-        Date filters apply to the appointment date, not booking creation time.
         """
+
         query = Booking.query
 
-        # Apply the default 30-day window only when no explicit filters are provided.
         if not date_from and not date_to and not search:
             before_30_days = datetime.now(timezone.utc) - timedelta(days=30)
-            query = query.filter(Booking.booking_time >= before_30_days)
+            query = query.filter(
+                Booking.booking_time >= before_30_days
+            )
 
         if search:
             query = query.filter(
                 db.or_(
                     Booking.name.ilike(f"%{search}%"),
                     Booking.phone_number.ilike(f"%{search}%"),
+                    Booking.secondary_phone_number.ilike(f"%{search}%"),
                 )
             )
 
@@ -99,7 +105,7 @@ class BookingService:
 
     def update_booking_status(self, new_status: Status, booking_id=None):
         """Update a booking's status and return the updated booking."""
-        # Support the historical reversed argument order: (booking_id, status).
+
         if isinstance(new_status, int) or isinstance(booking_id, Status):
             actual_booking_id, actual_status = new_status, booking_id
         else:
@@ -112,6 +118,7 @@ class BookingService:
             not actual_booking_id or self._booking.id == actual_booking_id
         ):
             booking = self._booking
+
         elif actual_booking_id:
             booking = db.session.get(Booking, actual_booking_id)
 
@@ -141,12 +148,41 @@ class BookingService:
         comes_from: str,
         time: str,
         address: str,
+        secondary_phone_number: Optional[str] = None,
+        total: Optional[Decimal] = None,
     ) -> BookingSaveResult:
         """
-        Save a booking, generate its reference ID, and create its confirmation image.
-
-        Reference ID collisions are handled by the database constraint and re-raised.
+        Save booking with optional total price
+        and generate confirmation image.
         """
+
+        secondary_phone_number = (
+            secondary_phone_number.strip()
+            if secondary_phone_number
+            and secondary_phone_number.strip()
+            else None
+        )
+
+        # Normalize total price
+        if total is not None and str(total).strip() != "":
+            try:
+                total = Decimal(str(total)).quantize(Decimal("0.01"))
+
+                if not total.is_finite() or total < 0:
+                    raise ValueError("Invalid booking total")
+
+                if total > Decimal("99999999.99"):
+                    raise ValueError("Booking total exceeds allowed limit")
+
+            except (InvalidOperation, ValueError):
+                logger.exception(
+                    "[BookingService.save_booking] Invalid total: %s",
+                    total,
+                )
+                raise ValueError("Invalid booking total")
+        else:
+            total = None
+
         reference_id = make_reference_id()
 
         while Booking.query.filter_by(
@@ -157,6 +193,7 @@ class BookingService:
         booking = Booking(
             name=name,
             phone_number=phone,
+            secondary_phone_number=secondary_phone_number,
             date=date,
             details=details,
             comes_from=comes_from,
@@ -164,6 +201,7 @@ class BookingService:
             booking_time=datetime.now(timezone.utc),
             time=time,
             address=address,
+            total=total,
         )
 
         db.session.add(booking)
@@ -174,7 +212,7 @@ class BookingService:
         except IntegrityError:
             db.session.rollback()
             logger.exception(
-                "[BookingService.save_booking] IntegrityError committing booking "
+                "[BookingService.save_booking] IntegrityError "
                 "(reference_id=%s)",
                 reference_id,
             )
@@ -192,13 +230,14 @@ class BookingService:
         self.reference_id = reference_id
 
         image_bytes = generate_booking_img(
-            name=name,
-            phone=phone,
-            date=date,
-            details=details,
-            reference_id=reference_id,
-            time=time,
-            address=address,
+            name=booking.name,
+            phone=booking.phone_number,
+            secondary_phone_number=booking.secondary_phone_number,
+            date=booking.date,
+            details=booking.details,
+            reference_id=booking.reference_id,
+            time=booking.time,
+            address=booking.address,
         )
 
         return BookingSaveResult(
@@ -208,7 +247,8 @@ class BookingService:
         )
 
     def export_to_excel(self, search, status, date_from, date_to):
-        """Generate an in-memory Excel workbook using the booking filters with premium formatting."""
+        """Generate an in-memory Excel workbook with both phone numbers."""
+
         pagination, _ = self.display_bookings(
             page=1,
             per_page=99999,
@@ -224,22 +264,26 @@ class BookingService:
         headers = [
             "الرقم المرجعي",
             "الاسم",
-            "رقم الهاتف",
+            "رقم الهاتف الأساسي",
+            "رقم الهاتف البديل",
             "العنوان",
             "التفاصيل",
             "تاريخ الزيارة",
             "الوقت",
             "المنصة",
             "وقت الإنشاء",
+            "إجمالي الحجز",
             "الحالة",
         ]
 
         rows = []
+
         for booking in pagination.items:
             rows.append([
                 booking.reference_id or f"#{booking.id}",
                 booking.name,
                 booking.phone_number,
+                booking.secondary_phone_number or "",
                 booking.address,
                 booking.details,
                 booking.date,
@@ -250,6 +294,7 @@ class BookingService:
                     if booking.booking_time
                     else ""
                 ),
+                float(booking.total) if booking.total is not None else "",
                 booking.status.value if booking.status else "",
             ])
 
@@ -258,7 +303,7 @@ class BookingService:
             title="الحجوزات المنزلية",
             headers=headers,
             rows=rows,
-            status_col_idx=10,  # 10th column is Status
+            status_col_idx=12,
         )
 
         output = BytesIO()
@@ -273,7 +318,9 @@ class BookingService:
         try:
             return Booking.query.count()
         except Exception:
-            logger.exception("[BookingService.get_total_bookings_count] Error")
+            logger.exception(
+                "[BookingService.get_total_bookings_count] Error"
+            )
             return 0
 
     @staticmethod
@@ -286,6 +333,9 @@ class BookingService:
             return Booking.query.filter_by(
                 reference_id=reference_id
             ).first()
+
         except Exception:
-            logger.exception("[BookingService.get_booking_by_ref] Error")
+            logger.exception(
+                "[BookingService.get_booking_by_ref] Error"
+            )
             return None

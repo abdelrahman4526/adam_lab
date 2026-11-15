@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}خدمات التحاليل الطبية — معمل عز لاب{% endblock %}
+{% block title %}خدمات التحاليل الطبية — معامل آدم{% endblock %}
 
 {% block topbar_title %}خدمات التحاليل الطبية{% endblock %}
 {% block topbar_sub %}إدارة وتحديث باقات وفحوصات التحاليل الطبية وتحديد الأسعار والشروط{% endblock %}
@@ -104,7 +104,8 @@
         <th style="width: 60px;">#</th>
         <th>اسم التحليل</th>
         <th>المعمل التابع له</th>
-        <th>السعر</th>
+        <th>السعر العام</th>
+        <th>سعر العدل</th>
         <th>المدة المتوقعة</th>
         <th>نوع العينة</th>
         <th style="width: 170px; text-align: center;">الإجراءات</th>
@@ -126,10 +127,24 @@
             {{ service.laboratory.name if service.laboratory else 'المعمل الرئيسي' }}
           </span>
         </td>
+        <!-- General Price Max -->
         <td>
           <span class="ts-price-badge">
-            {{ '%.2f'|format(service.price) }} <span class="ts-price-currency">ج.م</span>
+            {{ '%.2f'|format(service.general_price_max) }}
+            <span class="ts-price-currency">ج.م</span>
           </span>
+        </td>
+
+        <!-- El Adel Price -->
+        <td>
+          {% if service.el_adel_price is not none %}
+          <span class="ts-price-badge">
+            {{ '%.2f'|format(service.el_adel_price) }}
+            <span class="ts-price-currency">ج.م</span>
+          </span>
+          {% else %}
+          <span class="ts-muted-dash">—</span>
+          {% endif %}
         </td>
         <td>
           {% if service.duration %}

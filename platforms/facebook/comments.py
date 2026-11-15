@@ -5,8 +5,8 @@ from platforms.http_client import safe_post
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_PUBLIC_REPLY = "منوّرنا يا فندم 💙 ردينا عليك على الخاص، معمل الصدارة تحت أمرك."
-DEFAULT_PRIVATE_REPLY = "أهلاً وسهلاً بحضرتك 💙 معمل الصدارة تحت أمرك، تحب أساعدك في إيه؟"
+DEFAULT_PUBLIC_REPLY = "شكراً على تعليقك! راسلنا خاصةً للمساعدة. 🙏"
+DEFAULT_PRIVATE_REPLY = "أهلاً! شكراً على تعليقك، كيف نقدر نساعدك؟"
 
 def _auth_headers(token: str) -> dict:
     return {"Authorization": f"Bearer {token}"}

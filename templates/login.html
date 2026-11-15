@@ -1,451 +1,961 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>تسجيل الدخول — معمل عز لاب</title>
+  <meta name="theme-color" content="#293762">
+
+  <title>تسجيل الدخول | معامل آدم</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
   <style>
-    /* ── Executive Navy & Blue Ambiance Background ── */
-    body {
-      background: radial-gradient(circle at 15% 50%, rgba(37,99,235,0.16) 0%, transparent 45%),
-                  radial-gradient(circle at 85% 30%, rgba(20,184,166,0.14) 0%, transparent 50%),
-                  linear-gradient(135deg, #060d1e 0%, #0a1c3d 60%, #050910 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-      padding: 32px 20px;
-      font-family: 'Cairo', sans-serif;
+    /* ==========================================
+       ADAM LABS — BRAND DESIGN SYSTEM
+       ========================================== */
+
+    :root {
+      --adam-midnight: #293762;
+      --adam-navy: #354476;
+      --adam-blue: #4D5E9F;
+      --adam-blue-light: #7884BD;
+      --adam-red: #ED2944;
+      --adam-red-hover: #D91F39;
+      --adam-ink: #252F50;
+      --adam-muted: #77819A;
+      --adam-border: #E1E5F1;
+      --adam-white: #FFFFFF;
+      --adam-background: #F1F3FA;
+    }
+
+    * {
       box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+    }
+
+    body.adam-login-page {
+      min-height: 100vh;
+      min-height: 100dvh;
+      margin: 0;
+      padding: 42px 24px;
+
+      display: grid;
+      place-items: center;
+
       position: relative;
       overflow-x: hidden;
+
+      font-family: 'Cairo', sans-serif;
+      color: var(--adam-ink);
+
+      background:
+        radial-gradient(
+          ellipse at 12% 9%,
+          rgba(77, 94, 159, 0.14),
+          transparent 38%
+        ),
+        radial-gradient(
+          ellipse at 91% 89%,
+          rgba(237, 41, 68, 0.08),
+          transparent 30%
+        ),
+        var(--adam-background);
     }
 
-    .page-container {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 48px;
-      width: 100%;
-      max-width: 1350px;
+    body.adam-login-page::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.3;
+
+      background-image:
+        radial-gradient(
+          #8B95BC 0.7px,
+          transparent 0.7px
+        );
+
+      background-size: 30px 30px;
+      mask-image: linear-gradient(
+        120deg,
+        #000,
+        transparent 75%
+      );
+    }
+
+    /* ==========================================
+       MAIN CONTAINER
+       ========================================== */
+
+    .adam-login-layout {
+      width: min(100%, 1070px);
       position: relative;
-      z-index: 2;
+      z-index: 1;
     }
 
-    .page-background-artwork {
+    .adam-login-headline {
       display: flex;
-      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      text-align: center;
-      flex-shrink: 0;
-    }
+      justify-content: space-between;
+      gap: 12px;
 
-    .artwork-logo-card {
-      background: #ffffff;
-      border: 3px solid rgba(37, 99, 235, 0.35);
-      border-radius: 28px;
-      padding: 22px 36px;
-      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), 0 0 40px rgba(37, 99, 235, 0.25);
-      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
-    }
+      margin: 0 8px 17px;
 
-    .artwork-logo-card:hover {
-      transform: translateY(-8px) scale(1.03);
-      box-shadow: 0 32px 80px rgba(0, 0, 0, 0.65), 0 0 50px rgba(37, 99, 235, 0.4);
-    }
-
-    .artwork-logo-img {
-      max-width: 220px;
-      height: auto;
-      object-fit: contain;
-      display: block;
-    }
-
-    .artwork-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      background: rgba(255, 255, 255, 0.07);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(37, 99, 235, 0.35);
-      color: #93c5fd;
-      padding: 10px 22px;
-      border-radius: 9999px;
-      font-size: 0.88rem;
+      font-size: 0.76rem;
       font-weight: 700;
-      margin-top: 20px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      color: #5A6689;
     }
 
-    .pulse-dot-blue {
-      width: 8px;
-      height: 8px;
-      background: #3b82f6;
-      border-radius: 50%;
-      box-shadow: 0 0 10px #3b82f6;
-    }
-
-    .login-wrapper {
+    .adam-wordmark {
       display: flex;
-      width: 100%;
-      max-width: 900px;
-      min-height: 540px;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .adam-mark {
+      width: 9px;
+      height: 9px;
+      border-radius: 3px;
+      transform: rotate(45deg);
+      background: var(--adam-red);
+    }
+
+    /* ==========================================
+       LOGIN CARD
+       ========================================== */
+
+    .adam-login-card {
+      display: grid;
+      grid-template-columns: 47% 53%;
+
+      min-height: 596px;
       border-radius: 24px;
       overflow: hidden;
-      box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 30px rgba(37,99,235,0.12);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      flex-shrink: 0;
+
+      background: var(--adam-white);
+
+      border: 1px solid rgba(51, 70, 127, 0.12);
+
+      box-shadow:
+        0 28px 72px rgba(36, 48, 94, 0.14),
+        0 2px 8px rgba(36, 48, 94, 0.04);
     }
 
-    .login-brand-panel {
-      flex: 1;
-      background: linear-gradient(145deg, #0f2a54 0%, #0a1c3d 60%, #060d1e 100%);
+    /* ==========================================
+       BRAND PANEL
+       ========================================== */
+
+    .adam-brand-panel {
+      position: relative;
+
       display: flex;
       flex-direction: column;
+      justify-content: space-between;
+
+      padding: 38px 40px 36px;
+      isolation: isolate;
+
+      background:
+        radial-gradient(
+          circle at 5% 88%,
+          rgba(251, 52, 72, 0.25),
+          transparent 36%
+        ),
+        radial-gradient(
+          circle at 95% 8%,
+          rgba(165, 177, 227, 0.24),
+          transparent 40%
+        ),
+        linear-gradient(
+          148deg,
+          #293762 0%,
+          #4D5E9F 62%,
+          #6671AE 100%
+        );
+
+      color: #FFFFFF;
+    }
+
+    .adam-brand-panel::before {
+      content: '';
+
+      position: absolute;
+      width: 290px;
+      height: 290px;
+
+      left: -128px;
+      bottom: 60px;
+
+      border: 1px solid rgba(255,255,255,0.13);
+      border-radius: 50%;
+
+      box-shadow:
+        0 0 0 44px rgba(255,255,255,0.025),
+        0 0 0 88px rgba(255,255,255,0.018);
+
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .adam-brand-top {
+      display: flex;
+      justify-content: space-between;
       align-items: center;
-      justify-content: center;
-      padding: 48px 40px;
-      position: relative;
-      overflow: hidden;
+      gap: 12px;
     }
 
-    .login-brand-panel::before {
-      content: '';
-      position: absolute;
-      top: -80px;
-      left: -80px;
-      width: 300px;
-      height: 300px;
-      background: radial-gradient(circle, rgba(37,99,235,0.22) 0%, transparent 70%);
-      border-radius: 50%;
+    .adam-brand-topline {
+      font-size: 0.84rem;
+      font-weight: 700;
     }
 
-    .login-brand-panel::after {
-      content: '';
-      position: absolute;
-      bottom: -60px;
-      right: -60px;
-      width: 240px;
-      height: 240px;
-      background: radial-gradient(circle, rgba(20,184,166,0.18) 0%, transparent 70%);
-      border-radius: 50%;
+    .adam-brand-symbol {
+      color: #FF6274;
+      font-size: 1.25rem;
+      font-weight: 800;
     }
 
-    .brand-icon-badge {
-      width: 72px;
-      height: 72px;
-      background: rgba(37, 99, 235, 0.15);
-      border: 2px solid rgba(37, 99, 235, 0.4);
-      border-radius: 20px;
+    /* ==========================================
+       LOGO
+       ========================================== */
+
+    .adam-brand-center {
+      text-align: center;
+      padding: 34px 0 25px;
+    }
+
+    .adam-logo-frame {
+      width: 160px;
+      height: 160px;
+
+      margin: 0 auto 24px;
+      padding: 6px;
+
+      border-radius: 27px;
+
+      border: 1px solid rgba(255,255,255,0.42);
+      background: rgba(255,255,255,0.09);
+
+      box-shadow:
+        0 20px 40px rgba(20,25,59,0.23),
+        0 0 0 7px rgba(255,255,255,0.035);
+    }
+
+    .adam-logo-frame img {
+      display: block;
+      width: 100%;
+      height: 100%;
+
+      border-radius: 21px;
+      object-fit: cover;
+    }
+
+    .adam-brand-center h1 {
+      font-size: 1.74rem;
+      font-weight: 800;
+
+      margin: 0 0 7px;
+      color: #FFFFFF;
+    }
+
+    .adam-brand-center p {
+      font-size: 0.87rem;
+      color: rgba(255,255,255,0.79);
+      line-height: 1.95;
+
+      margin: 0 auto;
+      max-width: 310px;
+    }
+
+    .adam-accent-line {
+      width: 54px;
+      height: 4px;
+
+      border-radius: 999px;
+      background: var(--adam-red);
+
+      margin: 19px auto 0;
+    }
+
+    /* ==========================================
+       BRAND FOOTER
+       ========================================== */
+
+    .adam-brand-footer {
       display: flex;
       align-items: center;
-      justify-content: center;
-      margin-bottom: 24px;
-      position: relative;
-      z-index: 1;
-      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.2);
+      gap: 12px;
+
+      padding: 15px 16px;
+
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.08);
+
+      border-radius: 13px;
+      backdrop-filter: blur(6px);
     }
 
-    .brand-icon-badge svg {
+    .adam-brand-footer-icon {
+      display: grid;
+      place-items: center;
+
       width: 38px;
       height: 38px;
-      color: #60a5fa;
-    }
-
-    .brand-name {
-      font-size: 1.65rem;
-      font-weight: 800;
-      color: #93c5fd;
-      text-align: center;
-      line-height: 1.4;
-      position: relative;
-      z-index: 1;
-      margin-bottom: 12px;
-    }
-
-    .brand-tagline {
-      font-size: 0.85rem;
-      color: rgba(255,255,255,0.7);
-      text-align: center;
-      position: relative;
-      z-index: 1;
-      line-height: 1.6;
-    }
-
-    .brand-divider {
-      width: 45px;
-      height: 3px;
-      background: linear-gradient(90deg, #3b82f6, #14b8a6);
-      border-radius: 2px;
-      margin: 20px auto;
-      position: relative;
-      z-index: 1;
-    }
-
-    .brand-features {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-top: 12px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .brand-feature {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: rgba(255,255,255,0.85);
-      font-size: 0.88rem;
-    }
-
-    .brand-feature-dot {
-      width: 8px;
-      height: 8px;
-      background: #3b82f6;
-      border-radius: 50%;
-      box-shadow: 0 0 8px rgba(59,130,246,0.8);
       flex-shrink: 0;
+
+      border-radius: 11px;
+      color: #FFFFFF;
+
+      background: rgba(255,255,255,0.11);
     }
 
-    .login-form-panel {
-      flex: 1;
-      background: #ffffff;
+    .adam-brand-footer-icon svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .adam-brand-footer strong {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .adam-brand-footer span {
+      color: rgba(255,255,255,0.72);
+      font-size: 0.72rem;
+    }
+
+    /* ==========================================
+       FORM PANEL
+       ========================================== */
+
+    .adam-form-panel {
       display: flex;
       flex-direction: column;
       justify-content: center;
-      padding: 48px 44px;
-      position: relative;
+
+      padding: 48px clamp(30px, 5vw, 66px);
+      background: #FFFFFF;
     }
 
-    .login-form-title {
-      font-size: 1.6rem;
+    .adam-form-top {
+      width: fit-content;
+
+      background: #F1F3FA;
+      border: 1px solid #E5E9F4;
+      border-radius: 100px;
+
+      padding: 5px 13px;
+
+      font-size: 0.72rem;
       font-weight: 800;
-      color: #0f172a;
-      margin-bottom: 6px;
+      color: var(--adam-blue);
+
+      margin-bottom: 24px;
     }
 
-    .login-form-sub {
-      font-size: 0.875rem;
-      color: #64748b;
-      margin-bottom: 32px;
+    .adam-form-title {
+      font-size: clamp(1.55rem, 2.5vw, 1.95rem);
+      font-weight: 800;
+
+      margin: 0 0 6px;
+      color: var(--adam-ink);
     }
 
-    .login-field {
+    .adam-form-desc {
+      margin: 0 0 34px;
+
+      font-size: 0.87rem;
+      color: var(--adam-muted);
+      line-height: 1.8;
+    }
+
+    .adam-login-form {
+      width: 100%;
+    }
+
+    /* ==========================================
+       INPUT FIELDS
+       ========================================== */
+
+    .adam-field {
       margin-bottom: 20px;
     }
 
-    .login-field label {
+    .adam-field label {
       display: block;
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: #475569;
-      margin-bottom: 8px;
+
+      margin-bottom: 9px;
+
+      font-size: 0.83rem;
+      font-weight: 700;
+      color: #3C4768;
     }
 
-    .input-wrap {
+    .adam-input-wrap {
       position: relative;
     }
 
-    .input-wrap svg {
+    .adam-input-wrap svg {
       position: absolute;
+
       top: 50%;
-      right: 14px;
+      right: 16px;
       transform: translateY(-50%);
-      width: 17px;
-      height: 17px;
-      color: #94a3b8;
+
+      width: 19px;
+      height: 19px;
+
+      color: #8894B3;
       pointer-events: none;
     }
 
-    .login-input {
+    .adam-login-input {
+      display: block;
+
       width: 100%;
-      padding: 12px 42px 12px 16px;
-      background: #f8fafc;
-      border: 1.5px solid #e2e8f0;
-      border-radius: 10px;
-      color: #0f172a;
-      font-family: 'Cairo', sans-serif;
-      font-size: 0.9rem;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      box-sizing: border-box;
+      height: 51px;
+
+      border: 1.5px solid #E0E5F0;
+      border-radius: 11px;
+
+      background: #F9FAFE;
+      color: var(--adam-ink);
+
+      font: 600 0.87rem 'Cairo', sans-serif;
+
+      padding: 0 47px 0 17px;
+
+      transition:
+        background 0.18s,
+        border-color 0.18s,
+        box-shadow 0.18s;
+
+      outline: 0;
     }
 
-    .login-input:focus {
-      outline: none;
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    .adam-login-input::placeholder {
+      color: #A4ACC2;
+      font-weight: 500;
     }
 
-    .login-input::placeholder {
-      color: #94a3b8;
-      opacity: 0.6;
+    .adam-login-input:hover {
+      border-color: #C3CAE1;
     }
 
-    .login-btn {
+    .adam-login-input:focus {
+      background: #FFFFFF;
+      border-color: var(--adam-blue);
+
+      box-shadow:
+        0 0 0 4px rgba(77,94,159,0.12);
+    }
+
+    /* ==========================================
+       LOGIN BUTTON
+       ========================================== */
+
+    .adam-login-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+
       width: 100%;
-      padding: 13px;
-      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-      color: #fff;
+      min-height: 53px;
+
+      margin-top: 29px;
+
       border: none;
-      border-radius: 10px;
-      font-family: 'Cairo', sans-serif;
-      font-size: 0.95rem;
-      font-weight: 700;
+      border-radius: 11px;
+
+      font: 800 0.96rem 'Cairo', sans-serif;
+
+      background: linear-gradient(
+        120deg,
+        #ED2944,
+        #D91F39
+      );
+
+      color: #FFFFFF;
       cursor: pointer;
-      margin-top: 8px;
-      transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
-      box-shadow: 0 4px 16px rgba(37, 99, 235, 0.35);
+
+      box-shadow:
+        0 9px 21px rgba(237,41,68,0.24);
+
+      transition:
+        transform 0.18s,
+        box-shadow 0.18s,
+        filter 0.18s;
     }
 
-    .login-btn:hover {
-      opacity: 0.94;
+    .adam-login-button svg {
+      width: 19px;
+      height: 19px;
+    }
+
+    .adam-login-button:hover {
+      filter: brightness(1.04);
       transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+
+      box-shadow:
+        0 13px 26px rgba(237,41,68,0.29);
     }
 
-    .login-btn:active {
+    .adam-login-button:active {
       transform: translateY(0);
     }
 
-    .flash-error {
-      background: rgba(239,68,68,0.1);
-      border: 1px solid rgba(239,68,68,0.3);
-      border-radius: 10px;
-      padding: 12px 16px;
-      color: #dc2626;
-      font-size: 0.85rem;
-      margin-bottom: 20px;
+    .adam-login-button:focus-visible {
+      outline: 3px solid rgba(77,94,159,0.55);
+      outline-offset: 3px;
+    }
+
+    /* ==========================================
+       FLASH MESSAGES
+       ========================================== */
+
+    .adam-error {
       display: flex;
-      align-items: center;
-      gap: 8px;
+      align-items: flex-start;
+      gap: 9px;
+
+      padding: 11px 14px;
+      margin: 0 0 20px;
+
+      background: #FFF2F4;
+      color: #AD2039;
+
+      border: 1px solid #FFCAD2;
+      border-radius: 10px;
+
+      font-size: 0.8rem;
+      font-weight: 600;
     }
 
-    .flash-error svg {
-      width: 16px;
-      height: 16px;
+    .adam-error svg {
+      width: 18px;
+      height: 18px;
       flex-shrink: 0;
+      margin-top: 3px;
     }
 
-    @media (max-width: 992px) {
-      .page-container { flex-direction: column-reverse; gap: 32px; }
-      .page-background-artwork { margin-left: 0; }
+    .adam-form-note {
+      margin: 24px 0 0;
+      text-align: center;
+
+      font-size: 0.73rem;
+      color: #97A0B4;
     }
-    @media (max-width: 640px) {
-      .login-brand-panel { display: none; }
-      .login-wrapper { max-width: 420px; border-radius: 16px; }
-      .login-form-panel { padding: 40px 28px; }
+
+    .adam-bottom-caption {
+      text-align: center;
+      font-size: 0.73rem;
+      margin: 18px 0 0;
+      color: #8993AF;
     }
+
+    /* ==========================================
+       RESPONSIVE — TABLET
+       ========================================== */
+
+    @media (max-width: 800px) {
+
+      body.adam-login-page {
+        padding: 20px 16px;
+      }
+
+      .adam-login-card {
+        grid-template-columns: 1fr;
+        max-width: 540px;
+        margin: auto;
+      }
+
+      .adam-brand-panel {
+        padding: 25px 26px 22px;
+      }
+
+      .adam-brand-center {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+
+        text-align: right;
+        padding: 23px 0 12px;
+      }
+
+      .adam-logo-frame {
+        width: 87px;
+        height: 87px;
+        margin: 0;
+
+        border-radius: 17px;
+        flex-shrink: 0;
+        padding: 3px;
+      }
+
+      .adam-logo-frame img {
+        border-radius: 13px;
+      }
+
+      .adam-brand-center h1 {
+        font-size: 1.2rem;
+      }
+
+      .adam-brand-center p {
+        font-size: 0.72rem;
+      }
+
+      .adam-accent-line,
+      .adam-brand-footer {
+        display: none;
+      }
+
+      .adam-form-panel {
+        padding: 30px 28px 34px;
+      }
+
+      .adam-form-top {
+        margin-bottom: 16px;
+      }
+
+      .adam-form-desc {
+        margin-bottom: 25px;
+      }
+    }
+
+    /* ==========================================
+       RESPONSIVE — MOBILE
+       ========================================== */
+
+    @media (max-width: 420px) {
+
+      .adam-login-card {
+        border-radius: 18px;
+      }
+
+      .adam-login-headline {
+        font-size: 0.7rem;
+      }
+
+      .adam-form-panel {
+        padding: 27px 20px 30px;
+      }
+
+      .adam-brand-panel {
+        padding: 20px;
+      }
+
+      .adam-brand-center h1 {
+        font-size: 1.08rem;
+      }
+
+      .adam-logo-frame {
+        width: 70px;
+        height: 70px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .adam-login-button,
+      .adam-login-input {
+        transition: none;
+      }
+    }
+
   </style>
 </head>
-<body>
 
-<div class="page-container">
+<body class="adam-login-page">
 
-  <div class="page-background-artwork">
-    <div class="artwork-logo-card">
-      <img src="{{ url_for('static', filename='images/sadara_logo.jpeg') }}" alt="معمل عز لاب" class="artwork-logo-img">
-    </div>
-    <div class="artwork-badge">
-      <span class="pulse-dot-blue"></span>
-      معمل عز لاب للتحاليل الطبية الكيميائية
-    </div>
-  </div>
+  <div class="adam-login-layout">
 
-  <div class="login-wrapper">
+    <!-- HEADER -->
+    <div class="adam-login-headline">
 
-    <div class="login-brand-panel">
-      <div class="brand-icon-badge">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15M14.25 3.104c.251.023.501.05.75.082M19.8 15l-1.575.8A3.75 3.75 0 0116.5 16.5h-9a3.75 3.75 0 01-1.725-.7L4.2 15m15.6 0l.15.75A2.25 2.25 0 0117.75 18H6.25a2.25 2.25 0 01-2.163-2.25L4.2 15" />
-        </svg>
-      </div>
+      <span class="adam-wordmark">
+        <span class="adam-mark" aria-hidden="true"></span>
+        معامل آدم
+      </span>
 
-      <div class="brand-name">معمل عز لاب<br>للتحاليل الطبية الكيميائية</div>
-      <div class="brand-divider"></div>
-      <div class="brand-tagline">نظام أتمتة وإدارة الخدمات المخبرية والرعاية الطبية الفائقة</div>
+      <span>لوحة إدارة المعمل</span>
 
-      <div class="brand-features">
-        <div class="brand-feature">
-          <span class="brand-feature-dot"></span>
-          إدارة الحجوزات والاستفسارات
-        </div>
-        <div class="brand-feature">
-          <span class="brand-feature-dot"></span>
-          تحليل الوصفات بالذكاء الاصطناعي
-        </div>
-        <div class="brand-feature">
-          <span class="brand-feature-dot"></span>
-          تكامل مع منصات التواصل الاجتماعي
-        </div>
-      </div>
     </div>
 
-    <div class="login-form-panel">
-      <div class="login-form-title">مرحباً بك 👋</div>
-      <div class="login-form-sub">سجّل دخولك للمتابعة إلى لوحة التحكم</div>
+    <!-- LOGIN CARD -->
+    <div class="adam-login-card">
 
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% for category, message in messages %}
-          <div class="flash-error">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
-            </svg>
-            {{ message }}
-          </div>
-        {% endfor %}
-      {% endwith %}
+      <!-- BRAND SECTION -->
+      <section
+        class="adam-brand-panel"
+        aria-label="هوية معامل آدم"
+      >
 
-      <form method="POST" action="">
-        <div class="login-field">
-          <label for="username">اسم المستخدم</label>
-          <div class="input-wrap">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
-            </svg>
-            <input
-              id="username"
-              name="username"
-              type="text"
-              class="login-input"
-              placeholder="أدخل اسم المستخدم"
-              autocomplete="username"
-              required
+        <div class="adam-brand-top">
+
+          <span class="adam-brand-topline">
+            معامل آدم
+          </span>
+
+          <span
+            class="adam-brand-symbol"
+            aria-hidden="true"
+          >
+            ✦
+          </span>
+
+        </div>
+
+        <!-- LOGO -->
+        <div class="adam-brand-center">
+
+          <div class="adam-logo-frame">
+
+            <img
+              src="{{ url_for('static', filename='images/sadara_logo.jpeg') }}"
+              alt="شعار معامل آدم"
             >
+
           </div>
+
+          <div>
+
+            <h1>معامل آدم</h1>
+
+            <p>
+              للتحاليل الطبية والتشخيص المعملي
+            </p>
+
+            <div
+              class="adam-accent-line"
+              aria-hidden="true"
+            ></div>
+
+          </div>
+
         </div>
 
-        <div class="login-field">
-          <label for="password">كلمة المرور</label>
-          <div class="input-wrap">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
-            </svg>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              class="login-input"
-              placeholder="أدخل كلمة المرور"
-              autocomplete="current-password"
-              required
+        <!-- BRAND FOOTER -->
+        <div class="adam-brand-footer">
+
+          <div
+            class="adam-brand-footer-icon"
+            aria-hidden="true"
+          >
+
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="1.8"
             >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9 12l2 2 4-4m-3-8 1.9 1.8a6 6 0 0 0 3.2 1.5l2.6.3.3 2.6a6 6 0 0 0 1.5 3.2L23 12l-1.8 1.9a6 6 0 0 0-1.5 3.2l-.3 2.6-2.6.3a6 6 0 0 0-3.2 1.5L12 23l-1.9-1.8a6 6 0 0 0-3.2-1.5l-2.6-.3-.3-2.6a6 6 0 0 0-1.5-3.2L1 12l1.8-1.9a6 6 0 0 0 1.5-3.2l.3-2.6 2.6-.3a6 6 0 0 0 3.2-1.5L12 1z"
+              />
+            </svg>
+
           </div>
+
+          <div>
+
+            <strong>نظام إدارة المعمل</strong>
+
+            <span>
+              الحجوزات والطلبات والخدمات من مكان واحد
+            </span>
+
+          </div>
+
         </div>
 
-        <button type="submit" class="login-btn">تسجيل الدخول</button>
-      </form>
+      </section>
+
+      <!-- LOGIN FORM SECTION -->
+      <section
+        class="adam-form-panel"
+        aria-label="تسجيل الدخول"
+      >
+
+        <div class="adam-form-top">
+          منطقة الإدارة
+        </div>
+
+        <h2 class="adam-form-title">
+          مرحبًا بعودتك
+        </h2>
+
+        <p class="adam-form-desc">
+          سجّل الدخول إلى حسابك للوصول إلى لوحة التحكم.
+        </p>
+
+        <!-- FLASK FLASH MESSAGES -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% for category, message in messages %}
+
+            <div class="adam-error" role="alert">
+
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="1.8"
+              >
+                <circle cx="12" cy="12" r="9"/>
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M12 7v6m0 4h.01"
+                />
+              </svg>
+
+              <span>{{ message }}</span>
+
+            </div>
+
+          {% endfor %}
+        {% endwith %}
+
+        <!-- LOGIN FORM -->
+        <form
+          class="adam-login-form"
+          method="POST"
+          action=""
+        >
+
+          <!-- USERNAME -->
+          <div class="adam-field">
+
+            <label for="username">
+              اسم المستخدم
+            </label>
+
+            <div class="adam-input-wrap">
+
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="1.8"
+              >
+                <circle cx="12" cy="8" r="4"/>
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M4 21a8 8 0 0 1 16 0"
+                />
+              </svg>
+
+              <input
+                class="adam-login-input"
+                type="text"
+                id="username"
+                name="username"
+                placeholder="أدخل اسم المستخدم"
+                autocomplete="username"
+                required
+              >
+
+            </div>
+
+          </div>
+
+          <!-- PASSWORD -->
+          <div class="adam-field">
+
+            <label for="password">
+              كلمة المرور
+            </label>
+
+            <div class="adam-input-wrap">
+
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="1.8"
+              >
+                <rect
+                  x="5"
+                  y="10"
+                  width="14"
+                  height="11"
+                  rx="2"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M8 10V7a4 4 0 0 1 8 0v3"
+                />
+              </svg>
+
+              <input
+                class="adam-login-input"
+                type="password"
+                id="password"
+                name="password"
+                placeholder="أدخل كلمة المرور"
+                autocomplete="current-password"
+                required
+              >
+
+            </div>
+
+          </div>
+
+          <!-- SUBMIT BUTTON -->
+          <button
+            type="submit"
+            class="adam-login-button"
+          >
+
+            تسجيل الدخول
+
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M5 12h14m-6-6 6 6-6 6"
+              />
+            </svg>
+
+          </button>
+
+        </form>
+
+        <p class="adam-form-note">
+          هذه الصفحة مخصصة للمستخدمين المخوّلين.
+        </p>
+
+      </section>
+
     </div>
 
-  </div>
+    <!-- FOOTER -->
+    <p class="adam-bottom-caption">
+      معامل آدم © 2026 — لوحة إدارة الخدمات المعملية
+    </p>
 
-</div>
+  </div>
 
 </body>
 </html>

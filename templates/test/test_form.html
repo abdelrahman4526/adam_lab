@@ -1,7 +1,8 @@
+
 {% extends "base.html" %}
 
 {% block title %}
-{% if is_edit and service %}تعديل التحليل الطبي — {{ service.name }}{% else %}إضافة تحليل طبي جديد{% endif %} — معمل عز لاب
+{% if is_edit and service %}تعديل التحليل الطبي — {{ service.name }}{% else %}إضافة تحليل طبي جديد{% endif %} — معامل آدم
 {% endblock %}
 
 {% block topbar_title %}
@@ -32,6 +33,42 @@
 
 {% block content %}
 
+<style>
+  .basic-info-grid.pricing-layout {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 18px;
+    align-items: end;
+  }
+
+  .basic-info-grid.pricing-layout > div {
+    min-width: 0;
+  }
+
+  .basic-info-grid.pricing-layout .form-control {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  @media (max-width: 1250px) {
+    .basic-info-grid.pricing-layout {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 768px) {
+    .basic-info-grid.pricing-layout {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 480px) {
+    .basic-info-grid.pricing-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
 <div class="form-container">
 
   <!-- Progress / context ribbon -->
@@ -40,12 +77,16 @@
       <span class="tf-progress-dot">١</span>
       المعلومات الأساسية
     </div>
+
     <span class="tf-progress-line"></span>
+
     <div class="tf-progress-step">
       <span class="tf-progress-dot">٢</span>
       المساعد الطبي الذكي
     </div>
+
     <span class="tf-progress-line"></span>
+
     <div class="tf-progress-step">
       <span class="tf-progress-dot">٣</span>
       الحفظ والمراجعة
@@ -56,9 +97,7 @@
         action="{% if is_edit and service %}{{ url_for('test.edit_test', test_id=service.id) }}{% else %}{{ url_for('test.create_test') }}{% endif %}"
         data-is-edit="{% if is_edit %}true{% else %}false{% endif %}">
 
-    <!-- ══════════════════════════════════════════════════════════
-         SECTION A — BASIC INFORMATION (المعلومات الأساسية للتحليل)
-         ══════════════════════════════════════════════════════════ -->
+    <!-- SECTION A: BASIC INFORMATION -->
     <div class="section-card">
       <div class="section-header">
         <div class="section-title-wrap">
@@ -72,11 +111,13 @@
         </div>
       </div>
 
-      <!-- Test Name (Prominent full-width field) -->
+      <!-- Test Name -->
       <div class="test-name-field">
         <label for="testNameInput" class="test-name-label">
-          اسم التحليل الطبي <span class="required-star">*</span>
+          اسم التحليل الطبي
+          <span class="required-star">*</span>
         </label>
+
         <div class="tf-input-icon-wrap">
           <i data-lucide="flask-conical" class="tf-input-icon"></i>
           <input
@@ -89,21 +130,23 @@
             autocomplete="off"
             required>
         </div>
+
         <div class="field-hint">
           <i data-lucide="sparkles"></i>
           <span>اكتب اسم التحليل، وسيقوم المساعد الذكي باقتراح المعلومات الإضافية تلقائيًا.</span>
         </div>
       </div>
 
-      <!-- 4-Column Balanced Grid (Desktop) -->
-      <div class="basic-info-grid">
+      <div class="basic-info-grid pricing-layout">
 
-        <!-- 1. Laboratory Selection -->
+        <!-- Laboratory -->
         <div>
           <label for="labSelect" class="field-label">
             <i data-lucide="building-2" class="tf-field-label-icon"></i>
-            المعمل التابع له <span class="required-star">*</span>
+            المعمل التابع له
+            <span class="required-star">*</span>
           </label>
+
           <select id="labSelect" name="laboratory_id" class="form-control" required>
             <option value="">اختر المعمل أو الفرع...</option>
             {% for lab in laboratories %}
@@ -115,35 +158,62 @@
           </select>
         </div>
 
-        <!-- 2. Price -->
+        <!-- General Price Max -->
         <div>
           <label for="testPriceInput" class="field-label">
             <i data-lucide="banknote" class="tf-field-label-icon"></i>
-            السعر (ج.م) <span class="required-star">*</span>
+            السعر العام (ج.م)
+            <span class="required-star">*</span>
           </label>
+
           <div class="tf-input-icon-wrap">
             <span class="tf-input-suffix">ج.م</span>
+
             <input
               type="number"
               step="0.01"
               min="0"
               id="testPriceInput"
-              name="price"
-              value="{{ service.price if service else (form_data.price if form_data else '') }}"
+              name="general_price_max"
+              value="{{ service.general_price_max if service and service.general_price_max is not none else (form_data.general_price_max if form_data else '') }}"
               class="form-control tf-input-with-suffix"
               placeholder="0.00"
               required>
           </div>
         </div>
 
-        <!-- 3. Duration -->
+        <!-- El Adel Price -->
+        <div>
+          <label for="testElAdelPriceInput" class="field-label">
+            <i data-lucide="badge-percent" class="tf-field-label-icon"></i>
+            سعر العدل (ج.م)
+          </label>
+
+          <div class="tf-input-icon-wrap">
+            <span class="tf-input-suffix">ج.م</span>
+
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              id="testElAdelPriceInput"
+              name="el_adel_price"
+              value="{{ service.el_adel_price if service and service.el_adel_price is not none else (form_data.el_adel_price if form_data else '') }}"
+              class="form-control tf-input-with-suffix"
+              placeholder="0.00">
+          </div>
+        </div>
+
+        <!-- Duration -->
         <div>
           <label for="testDurationInput" class="field-label">
             <i data-lucide="clock" class="tf-field-label-icon"></i>
             المدة المتوقعة (بالساعات)
           </label>
+
           <div class="tf-input-icon-wrap">
             <span class="tf-input-suffix">ساعة</span>
+
             <input
               type="number"
               min="1"
@@ -155,12 +225,13 @@
           </div>
         </div>
 
-        <!-- 4. Sample Type -->
+        <!-- Sample Type -->
         <div>
           <label for="testSampleTypeInput" class="field-label">
             <i data-lucide="droplet" class="tf-field-label-icon"></i>
             نوع العينة المطلوبة
           </label>
+
           <input
             type="text"
             id="testSampleTypeInput"
@@ -173,27 +244,30 @@
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════════════════════════
-         SECTION B — AI ASSISTANT (المساعد الطبي الذكي)
-         ══════════════════════════════════════════════════════════ -->
+    <!-- SECTION B: AI ASSISTANT -->
     <div class="ai-assistant-card">
       <div class="section-header">
         <div class="section-title-wrap">
           <div class="section-icon tf-ai-icon-pulse">
             <i data-lucide="bot"></i>
           </div>
+
           <div>
             <div style="display: flex; align-items: center;">
               <h3 class="section-title">المساعد الطبي الذكي</h3>
-              <span class="ai-assistant-badge"><i data-lucide="sparkles" style="width:11px;height:11px;"></i> AI Assistant</span>
+              <span class="ai-assistant-badge">
+                <i data-lucide="sparkles" style="width:11px;height:11px;"></i>
+                AI Assistant
+              </span>
             </div>
+
             <p class="section-subtitle">
               يقترح وصف التحليل وتعليمات المريض والكلمات المفتاحية والأسماء البديلة.
             </p>
           </div>
         </div>
 
-        <!-- Action Buttons (Generate: Primary / Regenerate: Secondary) -->
+        <!-- AI Action Buttons -->
         <div class="ai-actions-group">
           <button type="button" id="generateBtn" class="ai-btn-generate">
             <i data-lucide="sparkles"></i>
@@ -207,17 +281,18 @@
         </div>
       </div>
 
-      <!-- Live Loading / Status Banner -->
+      <!-- AI Loading Status -->
       <div id="aiStatusBox" class="ai-status-box"></div>
 
       <div style="display: flex; flex-direction: column; gap: 18px;">
 
-        <!-- 1. Description -->
+        <!-- Description -->
         <div>
           <label for="testDescriptionInput" class="field-label">
             <i data-lucide="file-text" class="tf-field-label-icon"></i>
             الوصف الطبي للفحص
           </label>
+
           <textarea
             id="testDescriptionInput"
             name="description"
@@ -226,12 +301,13 @@
             placeholder="وصف طبي دقيق للتحليل، وأهميته التشخيصية ودواعي إجرائه...">{{ service.description if service else (form_data.description if form_data else '') }}</textarea>
         </div>
 
-        <!-- 2. Patient Instructions -->
+        <!-- Patient Instructions -->
         <div>
           <label for="testInstructionsInput" class="field-label">
             <i data-lucide="clipboard-check" class="tf-field-label-icon"></i>
             شروط وتعليمات المريض (التحضيرات)
           </label>
+
           <textarea
             id="testInstructionsInput"
             name="patient_instructions"
@@ -240,7 +316,7 @@
             placeholder="شروط أخذ العينة مثل: الصيام 8-12 ساعة، التوقف عن أدوية معينة، توقيت سحب العينة...">{{ service.patient_instructions if service else (form_data.patient_instructions if form_data else '') }}</textarea>
         </div>
 
-        <!-- 3 & 4. Keywords and Aliases (2-Column Grid) -->
+        <!-- Keywords and Aliases -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;" class="basic-info-grid">
 
           <!-- Keywords -->
@@ -249,6 +325,7 @@
               <i data-lucide="tags" class="tf-field-label-icon"></i>
               الكلمات المفتاحية (Keywords)
             </label>
+
             <div class="tag-input-box" id="keywordsContainer">
               {% if service and service.keywords %}
                 {% for kw in service.keywords %}
@@ -261,12 +338,14 @@
                   {% endif %}
                 {% endfor %}
               {% endif %}
+
               <input
                 type="text"
                 id="keywordsTextInput"
                 class="tag-input-field"
                 placeholder="اكتب واضغط Enter أو فاصلة...">
             </div>
+
             <div class="field-hint">
               <span>اضغط Enter أو فاصلة لإضافة كلمة جديدة.</span>
             </div>
@@ -278,6 +357,7 @@
               <i data-lucide="badge-check" class="tf-field-label-icon"></i>
               الأسماء البديلة والشائعة (Aliases)
             </label>
+
             <div class="tag-input-box" id="aliasesContainer">
               {% if service and service.alias_name %}
                 {% for al in service.alias_name %}
@@ -290,32 +370,29 @@
                   {% endif %}
                 {% endfor %}
               {% endif %}
+
               <input
                 type="text"
                 id="aliasesTextInput"
                 class="tag-input-field"
                 placeholder="اكتب اسماً واضغط Enter...">
             </div>
+
             <div class="field-hint">
               <span>اضغط Enter أو فاصلة لإضافة اسم بديل.</span>
             </div>
           </div>
-
         </div>
-
       </div>
 
-      <!-- AI Trust Indicator Note -->
+      <!-- AI Trust Note -->
       <div class="ai-trust-note">
         <i data-lucide="shield-check"></i>
         <span>المحتوى المقترح بواسطة الذكاء الاصطناعي قابل للمراجعة والتعديل قبل الحفظ.</span>
       </div>
-
     </div>
 
-    <!-- ══════════════════════════════════════════════════════════
-         FINAL ACTION BAR (حفظ / إلغاء)
-         ══════════════════════════════════════════════════════════ -->
+    <!-- FINAL ACTION BAR -->
     <div class="form-actions-bar">
       <button type="submit" id="saveTestBtn" class="btn-save-test">
         <i data-lucide="check"></i>
@@ -328,7 +405,6 @@
     </div>
 
   </form>
-
 </div>
 
 {% endblock %}

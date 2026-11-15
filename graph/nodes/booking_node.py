@@ -14,7 +14,7 @@ from services.domain.bundle_service import BundleService
 from utils.history_utils import get_chat_history
 from utils.llm_utils import extract_token_usage
 from utils.text_utils import detect_language_fallback, get_platform_name
-
+from utils.timeutils import now_local
 logger = logging.getLogger(__name__)
 
 OFFER_FLYER_MARKER = "LAB OFFER / BUNDLE FLYER"
@@ -51,7 +51,20 @@ def booking_node(state: AgentState) -> dict:
     )
 
     # 2. Fetch dynamic Lab Info & Bundles Context from DB
-    lab_name, lab_location, lab_desc = LaboratoryService.get_current_lab_info()
+    # 2. Fetch dynamic laboratory information
+    lab_name, lab_location, lab_desc = (
+        LaboratoryService.get_current_lab_info()
+    )
+
+    # Fetch branches from MySQL
+    branches_context = (
+        LaboratoryService.get_current_lab_branches_context()
+    )
+
+    logger.info(
+        "[BOOKING] Loaded laboratory branches context: %s",
+        branches_context
+    )
 
     if is_bundle_query:
         bundles_context = BundleService.get_bundles_formatted_context()
@@ -71,9 +84,7 @@ def booking_node(state: AgentState) -> dict:
     )
 
     # 4. Build the LLM prompt with dynamic Lab details & Bundles
-    current_time = datetime.now().strftime(
-        "Today is %A, %B %d, %Y. Current time is %I:%M %p"
-    )
+    current_time = now_local().strftime("%Y-%m-%d %H:%M:%S %Z")
 
     system_prompt = f"""
 {VISIT_SYSTEM_PROMPT}
@@ -82,7 +93,6 @@ def booking_node(state: AgentState) -> dict:
 LABORATORY INFORMATION
 ====================
 Name: {lab_name}
-Location: {lab_location}
 Description: {lab_desc}
 
 ====================
@@ -104,6 +114,21 @@ RECENT CONVERSATION
 VERIFIED LAB INFORMATION
 ====================
 {matched_context or "(No matching laboratory test found.)"}
+
+====================
+AVAILABLE LABORATORY BRANCHES
+====================
+{branches_context}
+
+====================
+BRANCH INFORMATION RULES
+====================
+- Branch information is retrieved directly from the laboratory database.
+- When the patient asks about available branches, list only the branches provided above.
+- When asked about a specific branch, provide its exact name, address, phone number, and working hours when available.
+- Never invent branch names, addresses, phone numbers, or working hours.
+- If no branch information is available, clearly state that the information is unavailable.
+- Do not claim that a booking has been assigned to a specific branch unless that assignment has actually been saved.
 
 ====================
 ALREADY COLLECTED SUMMARY
@@ -140,14 +165,14 @@ Last bot message:
             user_message,
             arabic=(
                 f"عذرًا، حدث خطأ مؤقت أثناء معالجة طلبك ⚠️\n\n"
-                f"يرجى المحاولة مرة أخرى بعد قليل، أو يمكنك التواصل مباشرة مع خدمة عملاء معامل الصدارة لمساعدتك فوراً عبر الرقم:\n"
-                f"📞 **01006446508**\n\n"
+                f"يرجى المحاولة مرة أخرى بعد قليل، أو يمكنك التواصل مباشرة مع خدمة عملاء معامل آدم لمساعدتك فوراً عبر الرقم:\n"
+                f"📞 ****\n\n"
                 f"نحن في خدمتك دائمًا ✨"
             ),
             default=(
                 f"Apologies, a temporary error occurred while processing your request ⚠️\n\n"
-                f"Please try again in a moment, or contact El Sadara Labs customer service directly for assistance at:\n"
-                f"📞 **01006446508**\n\n"
+                f"Please try again in a moment, or contact Adam labs customer service directly for assistance at:\n"
+                f"📞 ****\n\n"
                 f"We are always happy to help! ✨"
             ),
         )
@@ -227,13 +252,13 @@ Last bot message:
                 arabic=(
                     f"تم استلام طلب حجزك بنجاح ✅\n\n"
                     f"📌 **رقم الطلب:** *{booking_reference}*\n\n"
-                    f"سيقوم فريق خدمة العملاء بمعامل الصدارة بالتواصل معك قريباً لتأكيد الموعد النهائي.\n\n"
+                    f"سيقوم فريق خدمة العملاء بمعامل آدم بالتواصل معك قريباً لتأكيد الموعد النهائي.\n\n"
                     f"مرفق أدناه تذكرة الحجز الخاصة بك 🎫"
                 ),
                 default=(
                     f"Your booking request has been successfully received ✅\n\n"
                     f"📌 **Reference ID:** *{booking_reference}*\n\n"
-                    f"Our customer service team at El Sadara Labs will contact you shortly to confirm the final appointment.\n\n"
+                    f"Our customer service team at Adam labs will contact you shortly to confirm the final appointment.\n\n"
                     f"Here is your booking ticket below 🎫"
                 ),
             )

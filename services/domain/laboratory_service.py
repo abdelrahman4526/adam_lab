@@ -2,7 +2,7 @@ import logging
 
 from sqlalchemy.exc import IntegrityError
 
-from models.models import Lab, db
+from models.models import Lab, db,Branch
 
 logger = logging.getLogger(__name__)
 
@@ -169,6 +169,48 @@ class LaboratoryService:
             logger.exception("Failed to fetch laboratories ordered by name")
             return []
 
+    
+    @staticmethod
+    def get_current_lab_branches_context():
+        """
+        Fetch all branches belonging to the current laboratory.
+        Format branch details for the AI system prompt.
+        """
+        try:
+            lab = Lab.query.order_by(Lab.id.asc()).first()
+
+            if not lab:
+                logger.warning("No laboratory found")
+                return "لا توجد بيانات معمل مسجلة."
+
+            branches = (
+                Branch.query
+                .filter_by(laboratory_id=lab.id)
+                .order_by(Branch.id.asc())
+                .all()
+            )
+
+            if not branches:
+                return "لا توجد فروع مسجلة لهذا المعمل حاليًا."
+
+            lines = []
+
+            for branch in branches:
+                lines.append(
+                    f"Branch ID: {branch.id}\n"
+                    f"Branch Name: {branch.name}\n"
+                    f"Address: {branch.address or 'غير محدد'}\n"
+                    f"Phone: {branch.phone_number or 'غير متوفر'}\n"
+                    f"Working Hours: {branch.working_hours or 'غير محددة'}"
+                )
+
+            return "\n\n--------------------\n\n".join(lines)
+
+        except Exception:
+            logger.exception(
+                "[LaboratoryService] Failed to fetch branches"
+            )
+            return "تعذر تحميل بيانات الفروع حاليًا."
 
 
     @staticmethod
@@ -180,7 +222,7 @@ class LaboratoryService:
             lab = Lab.query.order_by(Lab.id.asc()).first()
             if not lab:
                 return (
-                    "معمل عز لاب  للتحاليل الطبية",
+                    "معامل آدم  للتحاليل الطبية",
                     "الإسكندرية",
                     "معمل متخصص في جميع التحاليل الطبية والكيميائية"
                 )
@@ -193,7 +235,7 @@ class LaboratoryService:
         except Exception:
             logger.exception("[LaboratoryService.get_current_lab_info] failed")
             return (
-                "معمل عز لاب للتحاليل الطبية",
+                "معامل آدم للتحاليل الطبية",
                 "الإسكندرية",
                 "معمل متخصص في التحاليل الطبية"
             )    

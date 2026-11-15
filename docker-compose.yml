@@ -1,7 +1,7 @@
 services:
   db:
     image: mysql:8.0
-    container_name: Ezz-labs-db
+    container_name: adam-labs-db
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -22,10 +22,10 @@ services:
   qdrant:
    
     image: qdrant/qdrant:v1.19.0
-    container_name: Ezz-labs-qdrant
+    container_name: adam-labs-qdrant
     restart: always
     ports:
-      - "6335:6333"
+      - "6359:6333"
     volumes:
       - qdrantdata:/qdrant/storage
     networks:
@@ -33,16 +33,17 @@ services:
 
   web:
     build: .
-    container_name: Ezz-labs-agent
+    container_name: adam-labs-agent
     restart: always
     ports:
-      - "6155:4500"      
+      - "6169:4500"      
     env_file:
       - .env
     volumes:
       - ./instance:/app/instance
       - ./static/uploads:/app/static/uploads
       - ./credentials.json:/app/credentials.json:ro
+      - ./logs/flask:/app/logs
     depends_on:
       db:
         condition: service_healthy
@@ -56,12 +57,12 @@ services:
       - internal
 
   waha1:
-    image: devlikeapro/waha
-    container_name: Ezz-labs-waha1
+    image: devlikeapro/waha:latest-2026.9.2
+    container_name: adam-waha1
     restart: always
     shm_size: '2gb'
     ports:
-      - "3015:3000"     
+      - "3026:3000"     
     environment:
       - WAHA_DASHBOARD_USERNAME=${WAHA_DASHBOARD_USERNAME}
       - WAHA_DASHBOARD_PASSWORD=${WAHA_DASHBOARD_PASSWORD}
@@ -71,7 +72,7 @@ services:
       - WH_EVENTS=message.upsert,message.any
       - WAHA_SESSION_STORE=FILE
       - WAHA_SESSIONS_DIR=/app/.sessions
-      - WHATSAPP_DEFAULT_ENGINE=WEBJS
+      - WHATSAPP_DEFAULT_ENGINE=NOWEB
       - PUPPETEER_ARGS=--no-sandbox,--disable-setuid-sandbox,--disable-dev-shm-usage,--disable-gpu,--no-zygote,--disable-extensions
       - WAHA_SESSION_CONFIG_IGNORE_STATUS=true
       - WAHA_SESSION_CONFIG_IGNORE_BROADCAST=true
@@ -82,17 +83,17 @@ services:
       resources:
         limits:
           cpus: '1.0'
-          memory: 1G
+          memory: 512M
     networks:
       - internal
 
+
   redis:
     image: redis:7-alpine
-    container_name: Ezz-labs-redis
+    container_name: adam-labs-redis
     restart: always
     command: ["redis-server", "--appendonly", "yes"]
-    ports:
-      - "6380:6379"
+
     volumes:
       - redisdata:/data
     networks:
@@ -100,7 +101,7 @@ services:
 
   redis_worker:
     build: .
-    container_name: Ezz-labs-redis-worker
+    container_name: adam-labs-redis-worker
     restart: always
     command: ["python", "-m", "services.messaging.redis_worker"]
     env_file:
@@ -109,6 +110,7 @@ services:
       - ./instance:/app/instance
       - ./static/uploads:/app/static/uploads
       - ./credentials.json:/app/credentials.json:ro
+      - ./logs/worker:/app/logs
     depends_on:
       db:
         condition: service_healthy
@@ -120,8 +122,12 @@ services:
 networks:
   internal:
     driver: bridge
-
 volumes:
   mysqldata:
+    name: adam_mysqldata
+
   qdrantdata:
+    name: adam_qdrantdata
+
   redisdata:
+    name: adam_redisdata

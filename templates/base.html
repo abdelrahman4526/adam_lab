@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}معمل عز لاب للتحاليل الطبية الكيميائية — لوحة التحكم{% endblock %}</title>
+  <title>{% block title %}معامل آدم للتحاليل الطبية الكيميائية — لوحة التحكم{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -26,11 +26,11 @@
   <div class="sidebar-header">
     <div class="brand-badge brand-logo-badge">
       <div class="brand-logo-ring">
-        <img src="{{ url_for('static', filename='images/sadara_logo.jpeg') }}" alt="معمل عز لاب" class="brand-logo-img">
+        <img src="{{ url_for('static', filename='images/sadara_logo.jpeg') }}" alt="معامل آدم" class="brand-logo-img">
       </div>
       <div class="brand-text-container">
-        <div class="lab-name">معمل عز لاب</div>
-        <div class="lab-sub">للتحاليل الطبية الكيميائية</div>
+        <div class="lab-name">معامل آدم</div>
+        <div class="lab-sub">للتحاليل الطبية </div>
       </div>
     </div>
     <div class="sidebar-status">
@@ -69,6 +69,13 @@
       <i data-lucide="message-square-warning" class="nav-icon"></i>
       الشكاوى
     </a>
+    
+    
+    <a href="{{ url_for('results.list_results') }}"
+       class="nav-item {% if request.endpoint in ['results.list_results'] %}active{% endif %}">
+      <i data-lucide="file-check-2" class="nav-icon"></i>
+      نتائج التحاليل
+    </a>
 
     <p class="nav-section-label">الخدمات والباقات</p>
 
@@ -78,7 +85,7 @@
       التحاليل الطبية
     </a>
 
-    <!-- 🌟 تم إضافة رابط الباقات الفحصية هنا 🌟 -->
+    
     <a href="{{ url_for('bundle.list_bundles') }}"
        class="nav-item {% if request.endpoint in ['bundle.list_bundles', 'bundle.add_bundle', 'bundle.bundle_detail'] %}active{% endif %}">
       <i data-lucide="layers" class="nav-icon"></i>
@@ -198,7 +205,7 @@
 
   <!-- Footer -->
   <footer class="site-footer">
-    <span>مجموعة معامل عز لاب &copy; 2026</span>
+    <span>مجموعة معامل آدم &copy; 2026</span>
     <span class="footer-divider">•</span>
     <span>تطوير <a href="https://revyai.tech" target="_blank" rel="noopener">RevyAI</a> (<a href="https://wa.me/201554019172" target="_blank" rel="noopener" style="color:#25d366;font-weight:700;">01554019172</a>)</span>
   </footer>
@@ -207,6 +214,7 @@
 
 <!-- ── SCRIPTS ────────────────────────────────────────────── -->
 <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 {% block scripts %}{% endblock %}
 
